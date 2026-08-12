@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  sales
+  factory
+}
+
+enum AttributeDataType {
+  text
+  number
+  catalog
+  color
+}
+
+enum OrderStatus {
+  draft
+  confirmed
+  in_production
+  delivered
+  cancelled
+}
+
+enum ProductionStage {
+  fabric
+  frame
+  foam
+  base_cutting
+  cushions_cutting
+  base_upholstery
+  cushions_upholstery
+  ready
+}
+
+enum AttachmentType {
+  sketch
+  reference_photo
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  role      UserRole
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  ordersAsSalesperson    Order[]                  @relation("SalespersonOrders")
+  productionStagesMarked ProductionStageStatus[]
+
+  @@map("users")
+}
+
+model Customer {
+  id              String   @id @default(uuid())
+  firstName       String
+  lastName        String
+  deliveryAddress String?
+  mobilePhone     String?
+  phone           String?
+  email           String?
+  createdAt       DateTime @default(now())
+
+  orders Order[]
+
+  @@map("customers")
+}
+
+model ProductCategory {
+  id   String @id @default(uuid())
+  name String @unique
+
+  productTypes ProductType[]
+
+  @@map("product_categories")
+}
+
+model ProductType {
+  id             String  @id @default(uuid())
+  name           String  @unique
+  description    String?
+  basePrice      Decimal @default(0) @db.Decimal(12, 2)
+  active         Boolean @default(true)
+  sketchUrl      String?
+  sketchFileName String?
+  categories     ProductCategory[]
+
+  attributeDefinitions AttributeDefinition[]
+  orderItems           OrderItem[]
+
+  @@map("product_types")
+}
+
+model AttributeCatalog {
+  id   String @id @default(uuid())
+  name String @unique
+
+  values               AttributeCatalogValue[]
+  attributeDefinitions AttributeDefinition[]
+
+  @@map("attribute_catalogs")
+}
+
+model AttributeCatalogValue {
+  id                 String  @id @default(uuid())
+  value              String
+  active             Boolean @default(true)
+  attributeCatalogId String
+  attributeCatalog   AttributeCatalog @relation(fields: [attributeCatalogId], references: [id], onDelete: Cascade)
+
+  @@unique([attributeCatalogId, value])
+  @@map("attribute_catalog_values")
+}
+
+model AttributeDefinition {
+  id                  String             @id @default(uuid())
+  productTypeId       String
+  productType         ProductType        @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
+  name                String
+  dataType            AttributeDataType
+  attributeCatalogId  String?
+  attributeCatalog    AttributeCatalog?  @relation(fields: [attributeCatalogId], references: [id])
+  sortOrder           Int                @default(0)
+  required            Boolean            @default(false)
+
+  @@unique([productTypeId, name])
+  @@map("attribute_definitions")
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  number      Int         @unique @default(autoincrement())
+  date        DateTime    @default(now())
+  printedAt   DateTime?
+  customerId  String
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  salespersonId String
+  salesperson User        @relation("SalespersonOrders", fields: [salespersonId], references: [id])
+  status      OrderStatus @default(draft)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  items    OrderItem[]
+  payments Payment[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String   @id @default(uuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productTypeId String
+  productType   ProductType @relation(fields: [productTypeId], references: [id])
+  quantity      Int      @default(1)
+  unitPrice     Decimal  @default(0) @db.Decimal(12, 2)
+  totalPrice    Decimal  @default(0) @db.Decimal(12, 2)
+  deliveryDate  DateTime
+  attributes    Json     @default("{}")
+  factoryNotes  String?
+  createdAt     DateTime @default(now())
+
+  attachments      Attachment[]
+  productionStages ProductionStageStatus[]
+
+  @@map("order_items")
+}
+
+model Attachment {
+  id          String         @id @default(uuid())
+  orderItemId String
+  orderItem   OrderItem      @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  type        AttachmentType
+  url         String
+  fileName    String
+  createdAt   DateTime       @default(now())
+
+  @@map("attachments")
+}
+
+model ProductionStageStatus {
+  id          String          @id @default(uuid())
+  orderItemId String
+  orderItem   OrderItem       @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  stage       ProductionStage
+  completed   Boolean         @default(false)
+  completedAt DateTime?
+  userId      String?
+  user        User?           @relation(fields: [userId], references: [id])
+
+  @@unique([orderItemId, stage])
+  @@map("production_stage_statuses")
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+  amount    Decimal  @db.Decimal(12, 2)
+  method    String
+  feePct    Decimal? @db.Decimal(5, 2)
+  note      String?
+
+  @@map("payments")
+}

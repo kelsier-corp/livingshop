@@ -1,0 +1,94 @@
+import React from "react";
+import { Document, Image, Page, Text, View } from "@react-pdf/renderer";
+import { Customer } from "@domain/entities/Customer";
+import { Order } from "@domain/entities/Order";
+import { baseStyles, colors, formatDate, formatDateTime } from "../theme";
+
+interface PdfImage {
+  data: Buffer;
+  format: "png" | "jpg";
+}
+
+interface Props {
+  order: Order;
+  customer: Customer;
+  sketches: Record<string, PdfImage>;
+  referencePhotos: Record<string, PdfImage[]>;
+}
+
+export function FactorySheetDocument({ order, customer, sketches, referencePhotos }: Props) {
+  return (
+    <Document>
+      <Page size="A4" style={baseStyles.page}>
+        <View style={baseStyles.headerRow}>
+          <View>
+            <Text style={baseStyles.brand}>Orden N.º {order.number}</Text>
+            <Text style={baseStyles.brandSubtitle}>Ficha técnica de fábrica</Text>
+          </View>
+          <View>
+            <Text style={baseStyles.docTitle}>
+              {customer.firstName} {customer.lastName}
+            </Text>
+            <Text style={baseStyles.emphasisMeta}>Fecha de impresión: {formatDateTime(order.printedAt)}</Text>
+          </View>
+        </View>
+
+        {order.items.map((item, index) => {
+          const sketch = sketches[item.productTypeId];
+          const photos = referencePhotos[item.id] ?? [];
+
+          return (
+            <View key={item.id} style={{ marginBottom: 16 }} wrap={false}>
+              <View style={[baseStyles.row, { justifyContent: "space-between", alignItems: "flex-end" }]}>
+                <Text style={[baseStyles.sectionTitle, { marginTop: index === 0 ? 0 : 14 }]}>
+                  {index + 1}. {item.productTypeName} — Cant. {item.quantity}
+                </Text>
+                <Text style={baseStyles.emphasisMeta}>Fecha de entrega: {formatDate(item.deliveryDate)}</Text>
+              </View>
+              <View style={baseStyles.row}>
+                <View style={{ flex: 1 }}>
+                  {Object.entries(item.attributes).map(([key, value]) => (
+                    <View key={key} style={[baseStyles.row, { marginBottom: 2 }]}>
+                      <Text style={[baseStyles.label, { width: 160 }]}>{key}</Text>
+                      <Text style={baseStyles.value}>{String(value)}</Text>
+                    </View>
+                  ))}
+                  {item.factoryNotes ? (
+                    <View style={{ marginTop: 6 }}>
+                      <Text style={[baseStyles.label, { marginBottom: 2 }]}>Comentarios</Text>
+                      <Text style={baseStyles.value}>{item.factoryNotes}</Text>
+                    </View>
+                  ) : null}
+                </View>
+                {sketch ? (
+                  <View style={{ width: 200, borderWidth: 0.5, borderColor: colors.border, padding: 4 }}>
+                    <Image src={sketch} style={{ width: "100%" }} />
+                  </View>
+                ) : null}
+              </View>
+              {photos.length > 0 && (
+                <View style={{ marginTop: 6 }}>
+                  <Text style={[baseStyles.label, { marginBottom: 4 }]}>Fotos de referencia</Text>
+                  <View style={[baseStyles.row, { gap: 6, flexWrap: "wrap" }]}>
+                    {photos.map((photo, photoIndex) => (
+                      <View
+                        key={photoIndex}
+                        style={{ width: 90, borderWidth: 0.5, borderColor: colors.border, padding: 3 }}
+                      >
+                        <Image src={photo} style={{ width: "100%" }} />
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        })}
+
+        <Text style={baseStyles.footer}>
+          Livingshop — Ficha técnica — impresa el {formatDateTime(order.printedAt)}
+        </Text>
+      </Page>
+    </Document>
+  );
+}
