@@ -1,0 +1,21 @@
+name: Guard main
+
+# Enforces the release process: main only ever receives merges from release/*
+# branches. Add this job as a required status check on main's branch
+# protection rule so a PR from any other branch can never be merged in.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only release/* branches may target main
+        run: |
+          if [[ "${{ github.head_ref }}" != release/* ]]; then
+            echo "::error::Only branches matching 'release/*' may open a pull request into main. This PR comes from '${{ github.head_ref }}'."
+            exit 1
+          fi
