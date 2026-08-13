@@ -17,6 +17,7 @@ import {
   ProductTypeRepository,
 } from "@domain/repositories/CatalogRepository";
 import { StoredFile } from "@domain/repositories/FileStorage";
+import { findIdsByUnaccentedSearch } from "./accentInsensitiveSearch";
 
 const productTypeInclude = {
   categories: true,
@@ -27,8 +28,12 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async list(query: ProductTypeListQuery): Promise<PageResult<ProductType>> {
+    const matchingIds = query.search
+      ? await findIdsByUnaccentedSearch(this.prisma, "product_types", ["name"], query.search)
+      : null;
+
     const where: Prisma.ProductTypeWhereInput = {
-      ...(query.search ? { name: { contains: query.search, mode: "insensitive" } } : {}),
+      ...(matchingIds ? { id: { in: matchingIds } } : {}),
       ...(query.categoryId ? { categories: { some: { id: query.categoryId } } } : {}),
     };
 
@@ -159,9 +164,10 @@ export class PrismaProductCategoryRepository implements ProductCategoryRepositor
   constructor(private readonly prisma: PrismaClient) {}
 
   async list(query: ProductCategoryListQuery): Promise<PageResult<ProductCategory>> {
-    const where: Prisma.ProductCategoryWhereInput = query.search
-      ? { name: { contains: query.search, mode: "insensitive" } }
-      : {};
+    const matchingIds = query.search
+      ? await findIdsByUnaccentedSearch(this.prisma, "product_categories", ["name"], query.search)
+      : null;
+    const where: Prisma.ProductCategoryWhereInput = matchingIds ? { id: { in: matchingIds } } : {};
 
     const [rows, total] = await Promise.all([
       this.prisma.productCategory.findMany({

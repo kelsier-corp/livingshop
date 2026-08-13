@@ -15,6 +15,7 @@ import { OrderItemWithContext, ProductionListQuery } from "@domain/entities/Prod
 import { OrderRepository } from "@domain/repositories/OrderRepository";
 import { SalesListQuery, SalesRow } from "@domain/entities/Sales";
 import { OrderStatus } from "@domain/entities/enums";
+import { findIdsByUnaccentedSearch } from "./accentInsensitiveSearch";
 
 const orderInclude = {
   customer: true,
@@ -60,18 +61,13 @@ export class PrismaOrderRepository implements OrderRepository {
     if (query.dateFrom) dateFilter.gte = query.dateFrom;
     if (query.dateTo) dateFilter.lte = query.dateTo;
 
+    const matchingCustomerIds = query.customerQuery
+      ? await findIdsByUnaccentedSearch(this.prisma, "customers", ["firstName", "lastName"], query.customerQuery)
+      : null;
+
     const where: Prisma.OrderWhereInput = {
       ...(query.number ? { number: query.number } : {}),
-      ...(query.customerQuery
-        ? {
-            customer: {
-              OR: [
-                { firstName: { contains: query.customerQuery, mode: "insensitive" } },
-                { lastName: { contains: query.customerQuery, mode: "insensitive" } },
-              ],
-            },
-          }
-        : {}),
+      ...(matchingCustomerIds ? { customerId: { in: matchingCustomerIds } } : {}),
       ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {}),
     };
 
@@ -102,7 +98,9 @@ export class PrismaOrderRepository implements OrderRepository {
     if (query.number) conditions.push(Prisma.sql`o.number = ${query.number}`);
     if (query.customerQuery) {
       const term = `%${query.customerQuery}%`;
-      conditions.push(Prisma.sql`(c."firstName" ILIKE ${term} OR c."lastName" ILIKE ${term})`);
+      conditions.push(
+        Prisma.sql`(unaccent(c."firstName") ILIKE unaccent(${term}) OR unaccent(c."lastName") ILIKE unaccent(${term}))`
+      );
     }
     if (query.dateFrom) conditions.push(Prisma.sql`o.date >= ${query.dateFrom}`);
     if (query.dateTo) conditions.push(Prisma.sql`o.date <= ${query.dateTo}`);
@@ -257,18 +255,13 @@ export class PrismaOrderRepository implements OrderRepository {
   }
 
   async listSalesRows(query: SalesListQuery): Promise<PageResult<SalesRow>> {
+    const matchingCustomerIds = query.customerQuery
+      ? await findIdsByUnaccentedSearch(this.prisma, "customers", ["firstName", "lastName"], query.customerQuery)
+      : null;
+
     const where: Prisma.OrderWhereInput = {
       ...(query.orderNumber !== undefined ? { number: query.orderNumber } : {}),
-      ...(query.customerQuery
-        ? {
-            customer: {
-              OR: [
-                { firstName: { contains: query.customerQuery, mode: "insensitive" } },
-                { lastName: { contains: query.customerQuery, mode: "insensitive" } },
-              ],
-            },
-          }
-        : {}),
+      ...(matchingCustomerIds ? { customerId: { in: matchingCustomerIds } } : {}),
     };
 
     const [rows, total] = await Promise.all([
