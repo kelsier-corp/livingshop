@@ -60,6 +60,12 @@ export interface PaymentInput {
   note?: string | null;
 }
 
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
 export interface Order {
   id: string;
   number: number;

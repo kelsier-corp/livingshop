@@ -31,6 +31,10 @@ async function main() {
     create: { name: "David Gomez", email: "factory@livingshop.test", role: "factory" },
   });
 
+  for (const name of ["Efectivo", "Débito", "Crédito", "Transferencia"]) {
+    await prisma.paymentMethod.upsert({ where: { name }, update: {}, create: { name } });
+  }
+
   const fabricCatalog = await prisma.attributeCatalog.upsert({
     where: { name: "Tela" },
     update: {},

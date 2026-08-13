@@ -131,6 +131,12 @@ export interface Payment {
   note: string | null;
 }
 
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  active: boolean;
+}
+
 export interface OrderTotals {
   totalAmount: number;
   amountPaid: number;

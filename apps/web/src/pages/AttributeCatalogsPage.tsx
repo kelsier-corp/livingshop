@@ -12,8 +12,10 @@ import { AttributeCatalog, AttributeCatalogValue } from "@/api/types";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { Modal } from "@/components/Modal";
 import { Card, DangerButton, FieldLabel, PageHeader, PrimaryButton, SecondaryButton, TextInput } from "@/components/ui";
+import { PaymentMethodsTab } from "./PaymentMethodsTab";
 
 export function AttributeCatalogsPage() {
+  const [tab, setTab] = useState<"attributes" | "payment-methods">("attributes");
   const queryClient = useQueryClient();
   const { data: catalogs = [], isLoading } = useQuery({
     queryKey: ["attribute-catalogs"],
@@ -128,21 +130,47 @@ export function AttributeCatalogsPage() {
 
   return (
     <div>
-      <PageHeader title="Catálogos" actions={<PrimaryButton onClick={() => setShowCreateForm(true)}>Nuevo catálogo</PrimaryButton>} />
+      <PageHeader
+        title="Catálogos"
+        actions={
+          tab === "attributes" && (
+            <PrimaryButton onClick={() => setShowCreateForm(true)}>Nuevo catálogo</PrimaryButton>
+          )
+        }
+      />
 
-      <Card>
-        {isLoading ? (
-          <p className="text-sm text-ink-soft">Cargando…</p>
-        ) : (
-          <DataTable
-            columns={columns}
-            rows={catalogs}
-            rowKey={(c) => c.id}
-            emptyMessage="Todavía no hay catálogos."
-            pagination={{ mode: "client", pageSize: 10 }}
-          />
-        )}
-      </Card>
+      <div className="mb-4 flex gap-1 border-b border-line">
+        {(["attributes", "payment-methods"] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setTab(value)}
+            className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              tab === value ? "border-accent text-accent-deep" : "border-transparent text-ink-soft hover:text-ink"
+            }`}
+          >
+            {value === "attributes" ? "Atributos" : "Métodos de pago"}
+          </button>
+        ))}
+      </div>
+
+      {tab === "payment-methods" ? (
+        <PaymentMethodsTab />
+      ) : (
+        <Card>
+          {isLoading ? (
+            <p className="text-sm text-ink-soft">Cargando…</p>
+          ) : (
+            <DataTable
+              columns={columns}
+              rows={catalogs}
+              rowKey={(c) => c.id}
+              emptyMessage="Todavía no hay catálogos."
+              pagination={{ mode: "client", pageSize: 10 }}
+            />
+          )}
+        </Card>
+      )}
 
       <Modal open={showCreateForm} onClose={() => setShowCreateForm(false)} title="Nuevo catálogo" width="max-w-md">
         <form onSubmit={handleCreateCatalog} className="space-y-4">
