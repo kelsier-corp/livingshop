@@ -341,6 +341,7 @@ function toOrderItemDomain(row: OrderItemRow): OrderItem {
     productTypeId: row.productTypeId,
     productTypeName: row.productType.name,
     productTypeSketchUrl: row.productType.sketchUrl,
+    productTypeIncludeInFactorySheet: row.productType.includeInFactorySheet,
     quantity: row.quantity,
     unitPrice: Number(row.unitPrice),
     totalPrice: Number(row.totalPrice),

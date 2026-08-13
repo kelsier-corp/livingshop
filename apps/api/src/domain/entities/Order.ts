@@ -25,6 +25,7 @@ export interface OrderItem {
   productTypeId: string;
   productTypeName?: string;
   productTypeSketchUrl: string | null;
+  productTypeIncludeInFactorySheet: boolean;
   quantity: number;
   unitPrice: number;
   totalPrice: number;

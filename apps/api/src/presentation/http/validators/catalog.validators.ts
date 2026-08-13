@@ -15,6 +15,7 @@ export const productTypeInputSchema = z.object({
   basePrice: z.number().nonnegative(),
   categoryIds: z.array(z.string().uuid()).default([]),
   active: z.boolean().optional(),
+  includeInFactorySheet: z.boolean().optional(),
   attributeDefinitions: z.array(attributeDefinitionInputSchema),
 });
 

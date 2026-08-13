@@ -83,14 +83,15 @@ model ProductCategory {
 }
 
 model ProductType {
-  id             String  @id @default(uuid())
-  name           String  @unique
-  description    String?
-  basePrice      Decimal @default(0) @db.Decimal(12, 2)
-  active         Boolean @default(true)
-  sketchUrl      String?
-  sketchFileName String?
-  categories     ProductCategory[]
+  id                    String  @id @default(uuid())
+  name                  String  @unique
+  description           String?
+  basePrice             Decimal @default(0) @db.Decimal(12, 2)
+  active                Boolean @default(true)
+  sketchUrl             String?
+  sketchFileName        String?
+  includeInFactorySheet Boolean @default(true)
+  categories            ProductCategory[]
 
   attributeDefinitions AttributeDefinition[]
   orderItems           OrderItem[]
