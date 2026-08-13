@@ -9,7 +9,14 @@ import {
 import { ProductCategory } from "@/api/types";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { Modal } from "@/components/Modal";
-import { Card, DangerButton, FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/ui";
+import {
+  Card,
+  DangerButton,
+  FieldLabel,
+  PrimaryButton,
+  SecondaryButton,
+  TextInput,
+} from "@/components/ui";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const PAGE_SIZE = 10;
@@ -25,7 +32,8 @@ export function ProductCategoriesTab() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["product-categories", { page, search: debouncedSearch }],
-    queryFn: () => fetchProductCategories({ page, pageSize: PAGE_SIZE, search: debouncedSearch || undefined }),
+    queryFn: () =>
+      fetchProductCategories({ page, pageSize: PAGE_SIZE, search: debouncedSearch || undefined }),
   });
 
   const invalidate = () => {
@@ -33,10 +41,20 @@ export function ProductCategoriesTab() {
     queryClient.invalidateQueries({ queryKey: ["product-categories-all"] });
   };
 
-  const createMutation = useMutation({ mutationFn: createProductCategory, onSuccess: () => { invalidate(); closeForm(); } });
+  const createMutation = useMutation({
+    mutationFn: createProductCategory,
+    onSuccess: () => {
+      invalidate();
+      closeForm();
+    },
+  });
   const updateMutation = useMutation({
-    mutationFn: ({ id, name: newName }: { id: string; name: string }) => updateProductCategory(id, newName),
-    onSuccess: () => { invalidate(); closeForm(); },
+    mutationFn: ({ id, name: newName }: { id: string; name: string }) =>
+      updateProductCategory(id, newName),
+    onSuccess: () => {
+      invalidate();
+      closeForm();
+    },
   });
   const deleteMutation = useMutation({ mutationFn: deleteProductCategory, onSuccess: invalidate });
 
@@ -65,8 +83,19 @@ export function ProductCategoriesTab() {
   }
 
   const columns: DataTableColumn<ProductCategory>[] = [
-    { key: "name", header: "Nombre", width: "50%", render: (c) => <span className="font-medium text-ink">{c.name}</span> },
-    { key: "count", header: "Productos asociados", width: "25%", align: "right", render: (c) => c.productCount },
+    {
+      key: "name",
+      header: "Nombre",
+      width: "50%",
+      render: (c) => <span className="font-medium text-ink">{c.name}</span>,
+    },
+    {
+      key: "count",
+      header: "Productos asociados",
+      width: "25%",
+      align: "right",
+      render: (c) => c.productCount,
+    },
     {
       key: "actions",
       header: "",
@@ -90,7 +119,10 @@ export function ProductCategoriesTab() {
             <TextInput
               placeholder="Nombre de la categoría…"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
           <PrimaryButton onClick={startCreate}>Nueva categoría</PrimaryButton>
@@ -106,19 +138,33 @@ export function ProductCategoriesTab() {
             rows={data?.items ?? []}
             rowKey={(c) => c.id}
             emptyMessage="No hay categorías que coincidan con el filtro."
-            pagination={{ mode: "server", page, pageSize: PAGE_SIZE, total: data?.total ?? 0, onPageChange: setPage }}
+            pagination={{
+              mode: "server",
+              page,
+              pageSize: PAGE_SIZE,
+              total: data?.total ?? 0,
+              onPageChange: setPage,
+            }}
           />
         )}
       </Card>
 
-      <Modal open={showForm} onClose={closeForm} title={editingId ? "Editar categoría" : "Nueva categoría"} width="max-w-md">
+      <Modal
+        open={showForm}
+        onClose={closeForm}
+        title={editingId ? "Editar categoría" : "Nueva categoría"}
+        width="max-w-md"
+      >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <FieldLabel>Nombre</FieldLabel>
             <TextInput required value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="flex gap-2">
-            <PrimaryButton type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+            <PrimaryButton
+              type="submit"
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
               {editingId ? "Guardar cambios" : "Crear categoría"}
             </PrimaryButton>
             <SecondaryButton type="button" onClick={closeForm}>

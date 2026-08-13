@@ -45,7 +45,14 @@ function alignClass(align?: "left" | "right" | "center"): string {
   return "text-left";
 }
 
-export function DataTable<T>({ columns, rows, rowKey, pagination, emptyMessage = "No hay resultados.", sort }: Props<T>) {
+export function DataTable<T>({
+  columns,
+  rows,
+  rowKey,
+  pagination,
+  emptyMessage = "No hay resultados.",
+  sort,
+}: Props<T>) {
   const [clientPage, setClientPage] = useState(1);
 
   const isServer = pagination?.mode === "server";
@@ -53,7 +60,9 @@ export function DataTable<T>({ columns, rows, rowKey, pagination, emptyMessage =
   const total = isServer ? pagination.total : rows.length;
   const page = isServer ? pagination.page : clientPage;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const visibleRows = isServer ? rows : rows.slice((clientPage - 1) * pageSize, clientPage * pageSize);
+  const visibleRows = isServer
+    ? rows
+    : rows.slice((clientPage - 1) * pageSize, clientPage * pageSize);
 
   function goToPage(target: number) {
     const clamped = Math.min(Math.max(1, target), totalPages);

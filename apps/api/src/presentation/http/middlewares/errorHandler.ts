@@ -16,7 +16,9 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
 
   if (error instanceof MulterError) {
     const message =
-      error.code === "LIMIT_FILE_SIZE" ? "El archivo supera el tamaño máximo permitido (8MB)" : error.message;
+      error.code === "LIMIT_FILE_SIZE"
+        ? "El archivo supera el tamaño máximo permitido (8MB)"
+        : error.message;
     res.status(400).json({ message });
     return;
   }

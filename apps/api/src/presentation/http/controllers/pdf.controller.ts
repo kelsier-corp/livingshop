@@ -31,7 +31,8 @@ export class PdfController {
   };
 
   salesSheet = async (req: Request, res: Response): Promise<void> => {
-    const periodLabel = typeof req.query.period === "string" ? req.query.period : "Todos los períodos";
+    const periodLabel =
+      typeof req.query.period === "string" ? req.query.period : "Todos los períodos";
     const { buffer, fileName } = await this.pdfService.salesSheet(periodLabel);
     sendPdf(res, fileName, buffer);
   };

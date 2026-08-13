@@ -27,7 +27,9 @@ export function SalesSheetDocument({ rows, periodLabel }: Props) {
           <Text style={[baseStyles.tableHeaderCell, { flex: 2 }]}>Cliente</Text>
           <Text style={[baseStyles.tableHeaderCell, { flex: 3.2 }]}>Productos</Text>
           <Text style={[baseStyles.tableHeaderCell, { flex: 1.2, textAlign: "right" }]}>Total</Text>
-          <Text style={[baseStyles.tableHeaderCell, { flex: 1.2, textAlign: "right" }]}>Pagado</Text>
+          <Text style={[baseStyles.tableHeaderCell, { flex: 1.2, textAlign: "right" }]}>
+            Pagado
+          </Text>
           <Text style={[baseStyles.tableHeaderCell, { flex: 1.2, textAlign: "right" }]}>Saldo</Text>
           <Text style={[baseStyles.tableHeaderCell, { flex: 1.2 }]}>Estado</Text>
         </View>
@@ -53,7 +55,9 @@ export function SalesSheetDocument({ rows, periodLabel }: Props) {
             <Text style={[baseStyles.tableCell, { flex: 1.2, textAlign: "right" }]}>
               {formatCurrency(row.balance)}
             </Text>
-            <Text style={[baseStyles.tableCell, { flex: 1.2 }]}>{ORDER_STATUS_LABEL[row.status]}</Text>
+            <Text style={[baseStyles.tableCell, { flex: 1.2 }]}>
+              {ORDER_STATUS_LABEL[row.status]}
+            </Text>
           </View>
         ))}
       </Page>

@@ -6,7 +6,9 @@ export interface ProductionListParams {
   pageSize: number;
 }
 
-export function fetchProductionBoard(params: ProductionListParams): Promise<PageResult<OrderItemWithContext>> {
+export function fetchProductionBoard(
+  params: ProductionListParams
+): Promise<PageResult<OrderItemWithContext>> {
   return apiGet<PageResult<OrderItemWithContext>>(`/production/board${toQueryString(params)}`);
 }
 

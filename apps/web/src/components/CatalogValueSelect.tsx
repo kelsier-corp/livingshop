@@ -56,7 +56,9 @@ export function CatalogValueSelect({ values, value, onChange, required }: Props)
               {v.value}
             </button>
           ))}
-          {matches.length === 0 && <p className="px-3 py-2 text-sm text-ink-soft">Sin coincidencias.</p>}
+          {matches.length === 0 && (
+            <p className="px-3 py-2 text-sm text-ink-soft">Sin coincidencias.</p>
+          )}
           {!term && activeValues.length > matches.length && (
             <p className="px-3 py-2 text-xs text-ink-soft/70">
               Mostrando {matches.length} de {activeValues.length} — escribí para buscar el resto.

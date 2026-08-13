@@ -1,7 +1,10 @@
 import { getCurrentUserId } from "./currentUserStore";
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(
+    public readonly status: number,
+    message: string
+  ) {
     super(message);
   }
 }
@@ -64,7 +67,9 @@ export function pdfUrl(path: string): string {
 
 export function toQueryString(params: object): string {
   const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(params as Record<string, string | number | undefined>)) {
+  for (const [key, value] of Object.entries(
+    params as Record<string, string | number | undefined>
+  )) {
     if (value !== undefined && value !== "") search.set(key, String(value));
   }
   const query = search.toString();

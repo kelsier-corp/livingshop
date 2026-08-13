@@ -13,7 +13,12 @@ export function createProductTypesRouter(controller: ProductTypesController): Ro
   router.post("/", requireRole("admin"), controller.create);
   router.put("/:id", requireRole("admin"), controller.update);
   router.delete("/:id", requireRole("admin"), controller.remove);
-  router.post("/:id/sketch", requireRole("admin"), imageUpload.single("file"), controller.uploadSketch);
+  router.post(
+    "/:id/sketch",
+    requireRole("admin"),
+    imageUpload.single("file"),
+    controller.uploadSketch
+  );
   router.delete("/:id/sketch", requireRole("admin"), controller.removeSketch);
   return router;
 }
