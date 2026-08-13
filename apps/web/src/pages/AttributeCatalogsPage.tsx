@@ -140,15 +140,20 @@ export function AttributeCatalogsPage() {
       header: "",
       width: "25%",
       align: "right",
-      render: (v) => (
-        <button
-          type="button"
-          className="text-xs text-signal hover:underline"
-          onClick={() => managingCatalogId && deleteValueMutation.mutate({ catalogId: managingCatalogId, valueId: v.id })}
-        >
-          quitar
-        </button>
-      ),
+      render: (v) => {
+        const isLastValue = (managingCatalog?.values.length ?? 0) <= 1;
+        return (
+          <button
+            type="button"
+            disabled={isLastValue}
+            title={isLastValue ? "Un catálogo necesita al menos un valor" : undefined}
+            className="text-xs text-signal hover:underline disabled:cursor-not-allowed disabled:text-ink-soft/40 disabled:no-underline"
+            onClick={() => managingCatalogId && deleteValueMutation.mutate({ catalogId: managingCatalogId, valueId: v.id })}
+          >
+            quitar
+          </button>
+        );
+      },
     },
   ];
 

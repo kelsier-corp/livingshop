@@ -38,6 +38,7 @@ export interface AttributeCatalogRepository {
   update(id: string, name: string): Promise<AttributeCatalog>;
   delete(id: string): Promise<void>;
   addValue(attributeCatalogId: string, value: string): Promise<AttributeCatalogValue>;
+  findValueById(id: string): Promise<AttributeCatalogValue | null>;
   updateValue(id: string, value: string, active: boolean): Promise<AttributeCatalogValue>;
   deleteValue(id: string): Promise<void>;
 }

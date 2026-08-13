@@ -44,7 +44,13 @@ export class AttributeCatalogService {
     return this.repository.updateValue(id, value, active);
   }
 
-  deleteValue(id: string): Promise<void> {
-    return this.repository.deleteValue(id);
+  async deleteValue(id: string): Promise<void> {
+    const value = await this.repository.findValueById(id);
+    if (!value) throw new NotFoundError("AttributeCatalogValue", id);
+    const catalog = await this.getById(value.attributeCatalogId);
+    if (catalog.values.length <= 1) {
+      throw new ValidationError("A catalog must keep at least one value");
+    }
+    await this.repository.deleteValue(id);
   }
 }

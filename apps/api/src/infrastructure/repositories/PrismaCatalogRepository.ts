@@ -264,6 +264,11 @@ export class PrismaAttributeCatalogRepository implements AttributeCatalogReposit
     return toValueDomain(row);
   }
 
+  async findValueById(id: string): Promise<AttributeCatalogValue | null> {
+    const row = await this.prisma.attributeCatalogValue.findUnique({ where: { id } });
+    return row ? toValueDomain(row) : null;
+  }
+
   async updateValue(id: string, value: string, active: boolean): Promise<AttributeCatalogValue> {
     const row = await this.prisma.attributeCatalogValue.update({
       where: { id },
