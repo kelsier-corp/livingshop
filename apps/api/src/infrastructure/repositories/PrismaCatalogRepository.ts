@@ -128,7 +128,10 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
     return this.findAll();
   }
 
-  async applyPercentageIncrease(percentage: number, categoryIds: string[] | null): Promise<ProductType[]> {
+  async applyPercentageIncrease(
+    percentage: number,
+    categoryIds: string[] | null
+  ): Promise<ProductType[]> {
     const targets = await this.prisma.productType.findMany({
       where: categoryIds ? { categories: { some: { id: { in: categoryIds } } } } : undefined,
       select: { id: true, basePrice: true },
@@ -175,7 +178,11 @@ export class PrismaProductCategoryRepository implements ProductCategoryRepositor
     ]);
 
     return {
-      items: rows.map((row) => ({ id: row.id, name: row.name, productCount: row._count.productTypes })),
+      items: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        productCount: row._count.productTypes,
+      })),
       total,
       page: query.page,
       pageSize: query.pageSize,
@@ -187,7 +194,11 @@ export class PrismaProductCategoryRepository implements ProductCategoryRepositor
       orderBy: { name: "asc" },
       include: { _count: { select: { productTypes: true } } },
     });
-    return rows.map((row) => ({ id: row.id, name: row.name, productCount: row._count.productTypes }));
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      productCount: row._count.productTypes,
+    }));
   }
 
   async create(name: string): Promise<ProductCategory> {
@@ -281,17 +292,15 @@ function toDomain(row: ProductTypeRow): ProductType {
     sketchUrl: row.sketchUrl,
     sketchFileName: row.sketchFileName,
     categories: row.categories.map((category) => ({ id: category.id, name: category.name })),
-    attributeDefinitions: row.attributeDefinitions.map(
-      (attribute): AttributeDefinition => ({
-        id: attribute.id,
-        productTypeId: attribute.productTypeId,
-        name: attribute.name,
-        dataType: attribute.dataType as AttributeDefinition["dataType"],
-        attributeCatalogId: attribute.attributeCatalogId,
-        sortOrder: attribute.sortOrder,
-        required: attribute.required,
-      })
-    ),
+    attributeDefinitions: row.attributeDefinitions.map((attribute): AttributeDefinition => ({
+      id: attribute.id,
+      productTypeId: attribute.productTypeId,
+      name: attribute.name,
+      dataType: attribute.dataType as AttributeDefinition["dataType"],
+      attributeCatalogId: attribute.attributeCatalogId,
+      sortOrder: attribute.sortOrder,
+      required: attribute.required,
+    })),
   };
 }
 

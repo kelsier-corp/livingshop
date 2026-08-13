@@ -3,11 +3,26 @@ import { FormEvent, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { pdfUrl } from "@/api/client";
 import { fetchCustomer } from "@/api/customers";
-import { addPayment, deleteAttachment, fetchOrder, updateOrderStatus, uploadAttachment } from "@/api/orders";
+import {
+  addPayment,
+  deleteAttachment,
+  fetchOrder,
+  updateOrderStatus,
+  uploadAttachment,
+} from "@/api/orders";
 import { OrderStatus } from "@/api/types";
 import { Collapsible } from "@/components/Collapsible";
 import { ORDER_STATUS_LABEL, OrderStatusBadge } from "@/components/OrderStatusBadge";
-import { Card, FieldLabel, FileInput, PageHeader, PrimaryButton, Select, SecondaryButton, TextInput } from "@/components/ui";
+import {
+  Card,
+  FieldLabel,
+  FileInput,
+  PageHeader,
+  PrimaryButton,
+  Select,
+  SecondaryButton,
+  TextInput,
+} from "@/components/ui";
 import { respectsMinimum } from "@/utils/number";
 
 const STATUSES: OrderStatus[] = ["draft", "confirmed", "in_production", "delivered", "cancelled"];
@@ -31,7 +46,11 @@ function formatDateTime(value: string | null): string {
 }
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
+  return value.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  });
 }
 
 export function OrderDetailPage() {
@@ -48,7 +67,9 @@ export function OrderDetailPage() {
     enabled: !!order,
   });
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "efectivo", note: "" });
-  const [pendingPreview, setPendingPreview] = useState<{ itemId: string; url: string } | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<{ itemId: string; url: string } | null>(
+    null
+  );
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["orders", id] });
 
@@ -58,7 +79,12 @@ export function OrderDetailPage() {
   });
 
   const paymentMutation = useMutation({
-    mutationFn: () => addPayment(id!, { amount: Number(paymentForm.amount), method: paymentForm.method, note: paymentForm.note || null }),
+    mutationFn: () =>
+      addPayment(id!, {
+        amount: Number(paymentForm.amount),
+        method: paymentForm.method,
+        note: paymentForm.note || null,
+      }),
     onSuccess: () => {
       invalidate();
       setPaymentForm({ amount: "", method: "efectivo", note: "" });
@@ -102,17 +128,28 @@ export function OrderDetailPage() {
 
   return (
     <div className="space-y-6">
-      <Link to="/orders" className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-accent">
+      <Link
+        to="/orders"
+        className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-accent"
+      >
         ← Volver a órdenes
       </Link>
       <PageHeader
         title={<span className="font-mono">Orden #{order.number}</span>}
         actions={
           <div className="flex gap-2">
-            <a href={pdfUrl(`/pdf/orders/${order.id}/order-sheet.pdf`)} target="_blank" rel="noreferrer">
+            <a
+              href={pdfUrl(`/pdf/orders/${order.id}/order-sheet.pdf`)}
+              target="_blank"
+              rel="noreferrer"
+            >
               <SecondaryButton type="button">PDF de la orden</SecondaryButton>
             </a>
-            <a href={pdfUrl(`/pdf/orders/${order.id}/factory-sheet.pdf`)} target="_blank" rel="noreferrer">
+            <a
+              href={pdfUrl(`/pdf/orders/${order.id}/factory-sheet.pdf`)}
+              target="_blank"
+              rel="noreferrer"
+            >
               <SecondaryButton type="button">Ficha técnica</SecondaryButton>
             </a>
           </div>
@@ -123,7 +160,9 @@ export function OrderDetailPage() {
         <div className="grid grid-cols-4 gap-4 text-sm">
           <div>
             <FieldLabel>Cliente</FieldLabel>
-            <p className="text-ink">{customer ? `${customer.firstName} ${customer.lastName}` : "-"}</p>
+            <p className="text-ink">
+              {customer ? `${customer.firstName} ${customer.lastName}` : "-"}
+            </p>
           </div>
           <div>
             <FieldLabel>Fecha de la orden</FieldLabel>
@@ -167,7 +206,9 @@ export function OrderDetailPage() {
               subtitle={`Entrega ${formatDate(item.deliveryDate)}`}
               actions={
                 item.totalPrice !== undefined && (
-                  <span className="font-mono text-sm text-ink-soft">{formatCurrency(item.totalPrice)}</span>
+                  <span className="font-mono text-sm text-ink-soft">
+                    {formatCurrency(item.totalPrice)}
+                  </span>
                 )
               }
             >
@@ -186,7 +227,12 @@ export function OrderDetailPage() {
               {item.productTypeSketchUrl && (
                 <div className="mt-3 border-t border-line pt-3">
                   <FieldLabel>Croquis del producto</FieldLabel>
-                  <a href={item.productTypeSketchUrl} target="_blank" rel="noreferrer" className="block w-28">
+                  <a
+                    href={item.productTypeSketchUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block w-28"
+                  >
                     <img
                       src={item.productTypeSketchUrl}
                       alt="Croquis del producto"
@@ -202,7 +248,13 @@ export function OrderDetailPage() {
                 <div className="mb-2 flex flex-wrap gap-3">
                   {item.attachments.map((attachment) => (
                     <div key={attachment.id} className="w-28">
-                      <a href={attachment.url} target="_blank" rel="noreferrer" className="block" title={attachment.fileName}>
+                      <a
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block"
+                        title={attachment.fileName}
+                      >
                         <img
                           src={attachment.url}
                           alt={attachment.fileName}
@@ -246,10 +298,14 @@ export function OrderDetailPage() {
                     }}
                   />
                 </div>
-                <p className="mt-1 text-xs text-ink-soft/70">Formatos aceptados: JPG o PNG. Tamaño máximo 8MB.</p>
+                <p className="mt-1 text-xs text-ink-soft/70">
+                  Formatos aceptados: JPG o PNG. Tamaño máximo 8MB.
+                </p>
                 {attachmentMutation.isError && (
                   <p className="mt-1 text-xs text-signal">
-                    {attachmentMutation.error instanceof Error ? attachmentMutation.error.message : "No se pudo subir el archivo."}
+                    {attachmentMutation.error instanceof Error
+                      ? attachmentMutation.error.message
+                      : "No se pudo subir el archivo."}
                   </p>
                 )}
                 {deleteAttachmentMutation.isError && (
@@ -275,7 +331,9 @@ export function OrderDetailPage() {
             </div>
             <div>
               <FieldLabel>Saldo</FieldLabel>
-              <p className="font-mono font-semibold text-ink">{formatCurrency(order.totals.balance)}</p>
+              <p className="font-mono font-semibold text-ink">
+                {formatCurrency(order.totals.balance)}
+              </p>
             </div>
           </div>
 
@@ -286,7 +344,9 @@ export function OrderDetailPage() {
                 {payment.note ? ` — ${payment.note}` : ""}
               </li>
             ))}
-            {(order.payments ?? []).length === 0 && <li className="text-ink-soft/70">Todavía no hay pagos registrados.</li>}
+            {(order.payments ?? []).length === 0 && (
+              <li className="text-ink-soft/70">Todavía no hay pagos registrados.</li>
+            )}
           </ul>
 
           <form onSubmit={handlePaymentSubmit} className="grid grid-cols-4 gap-2">
@@ -297,7 +357,8 @@ export function OrderDetailPage() {
               placeholder="Monto"
               value={paymentForm.amount}
               onChange={(e) => {
-                if (respectsMinimum(e.target.value)) setPaymentForm({ ...paymentForm, amount: e.target.value });
+                if (respectsMinimum(e.target.value))
+                  setPaymentForm({ ...paymentForm, amount: e.target.value });
               }}
             />
             <Select

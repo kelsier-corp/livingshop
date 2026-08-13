@@ -37,7 +37,10 @@ export class PdfService {
     const customer = await this.customerRepository.findById(order.customerId);
     if (!customer) throw new NotFoundError("Customer", order.customerId);
     const buffer = await this.pdfRenderer.renderFactorySheet(order, customer);
-    return { buffer, fileName: factorySheetFileName(order.number, order.customerFullName, order.printedAt) };
+    return {
+      buffer,
+      fileName: factorySheetFileName(order.number, order.customerFullName, order.printedAt),
+    };
   }
 
   async productionSheet(): Promise<GeneratedPdf> {

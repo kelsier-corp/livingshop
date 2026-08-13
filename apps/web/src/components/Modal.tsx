@@ -16,7 +16,11 @@ export function Modal({ open, title, onClose, children, width = "max-w-2xl" }: P
       <div className={`w-full ${width} rounded-md border border-line bg-surface shadow-lg`}>
         <div className="flex items-center justify-between border-b border-line px-5 py-3">
           <h3 className="font-display text-lg font-semibold text-ink">{title}</h3>
-          <button type="button" onClick={onClose} className="text-xl leading-none text-ink-soft hover:text-signal">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xl leading-none text-ink-soft hover:text-signal"
+          >
             ×
           </button>
         </div>

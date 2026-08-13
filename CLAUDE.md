@@ -39,7 +39,7 @@ Resetting the local database is destructive — confirm with the user before run
 
 ### API (`apps/api/src`) — clean architecture, 4 layers
 
-- `domain/` — entities, repository *interfaces* (ports), domain errors, and pure policies (`domain/policies/orderTotals.ts`, `domain/policies/factoryView.ts`). No framework code here.
+- `domain/` — entities, repository _interfaces_ (ports), domain errors, and pure policies (`domain/policies/orderTotals.ts`, `domain/policies/factoryView.ts`). No framework code here.
 - `application/` — one `*Service` per module (`application/orders/OrderService.ts`, etc.) orchestrating domain logic against repository interfaces. This is where business validation lives (e.g. required-attribute checks, percentage-increase bounds).
 - `infrastructure/` — concrete adapters: `infrastructure/repositories/Prisma*Repository.ts` implement the domain repository interfaces, `infrastructure/pdf/` renders the 4 PDF documents with `@react-pdf/renderer`, `infrastructure/storage/LocalFileStorage.ts` handles attachment uploads.
 - `presentation/http/` — Express controllers, validators (Zod), routes, and middlewares. `presentation/http/middlewares/currentUser.ts` + `requireRole.ts` implement the mock-auth/role-gating described below.
@@ -52,7 +52,7 @@ Path aliases (`@domain/*`, `@application/*`, `@infrastructure/*`, `@presentation
 Postgres via Prisma (`apps/api/prisma/schema.prisma`). Notable shapes:
 
 - `ProductType` has a `basePrice`, a **many-to-many** relation to `ProductCategory` (a product's categories are optional and can be several — there is no single `categoryId`), and its own `sketchUrl`/`sketchFileName` (the technical sketch/croquis is reused across every order for that product, not re-uploaded per sale).
-- `OrderItem` snapshots `unitPrice`/`totalPrice` from the product's price *at order-creation time* — changing a product's price later never changes existing orders (see `application/orders/OrderService.ts#buildCreateData`). Its `Attachment`s are reference photos only (`type: "reference_photo"`) — the sketch lives on `ProductType`, not here. Every image upload (sketches and reference photos) is restricted to JPG/PNG, since both can end up embedded in a PDF and `@react-pdf/renderer` doesn't decode WEBP.
+- `OrderItem` snapshots `unitPrice`/`totalPrice` from the product's price _at order-creation time_ — changing a product's price later never changes existing orders (see `application/orders/OrderService.ts#buildCreateData`). Its `Attachment`s are reference photos only (`type: "reference_photo"`) — the sketch lives on `ProductType`, not here. Every image upload (sketches and reference photos) is restricted to JPG/PNG, since both can end up embedded in a PDF and `@react-pdf/renderer` doesn't decode WEBP.
 - `Order` API responses include a `customerFullName` (joined from the `customer` relation, not a stored column) so list/detail views never need a second lookup just to show a name.
 - Each `OrderItem` carries its own `deliveryDate` (not the `Order`) and a free-form `attributes` JSON column, since attribute sets vary per product type (`AttributeDefinition` rows define the schema per `ProductType`, optionally backed by a shared `AttributeCatalog`/`AttributeCatalogValue` for dropdown-style values).
 - `ProductionStageStatus` tracks the fixed factory pipeline (fabric → frame → foam → cutting → upholstery → ready) per `OrderItem`.

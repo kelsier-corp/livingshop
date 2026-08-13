@@ -41,11 +41,22 @@ const DATA_TYPE_LABEL: Record<AttributeDataType, string> = {
 };
 
 function emptyForm(): ProductTypeInput {
-  return { name: "", description: "", basePrice: 0, categoryIds: [], active: true, attributeDefinitions: [] };
+  return {
+    name: "",
+    description: "",
+    basePrice: 0,
+    categoryIds: [],
+    active: true,
+    attributeDefinitions: [],
+  };
 }
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
+  return value.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  });
 }
 
 export function ProductTypesPage() {
@@ -60,7 +71,12 @@ export function ProductTypesPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["product-types", { page, search: debouncedSearch, categoryFilter }],
     queryFn: () =>
-      fetchProductTypes({ page, pageSize: PAGE_SIZE, search: debouncedSearch || undefined, categoryId: categoryFilter || undefined }),
+      fetchProductTypes({
+        page,
+        pageSize: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+        categoryId: categoryFilter || undefined,
+      }),
   });
   const { data: categories = [] } = useQuery({
     queryKey: ["product-categories-all"],
@@ -74,17 +90,30 @@ export function ProductTypesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductTypeInput>(emptyForm());
-  const [editingSketch, setEditingSketch] = useState<{ url: string | null; fileName: string | null } | null>(null);
+  const [editingSketch, setEditingSketch] = useState<{
+    url: string | null;
+    fileName: string | null;
+  } | null>(null);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["product-types"] });
     queryClient.invalidateQueries({ queryKey: ["product-categories-all"] });
   };
 
-  const createMutation = useMutation({ mutationFn: createProductType, onSuccess: () => { invalidate(); closeForm(); } });
+  const createMutation = useMutation({
+    mutationFn: createProductType,
+    onSuccess: () => {
+      invalidate();
+      closeForm();
+    },
+  });
   const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: ProductTypeInput }) => updateProductType(id, input),
-    onSuccess: () => { invalidate(); closeForm(); },
+    mutationFn: ({ id, input }: { id: string; input: ProductTypeInput }) =>
+      updateProductType(id, input),
+    onSuccess: () => {
+      invalidate();
+      closeForm();
+    },
   });
   const deleteMutation = useMutation({ mutationFn: deleteProductType, onSuccess: invalidate });
 
@@ -153,16 +182,28 @@ export function ProductTypesPage() {
       ...form,
       attributeDefinitions: [
         ...form.attributeDefinitions,
-        { name: "", dataType: "text", attributeCatalogId: null, sortOrder: form.attributeDefinitions.length, required: false },
+        {
+          name: "",
+          dataType: "text",
+          attributeCatalogId: null,
+          sortOrder: form.attributeDefinitions.length,
+          required: false,
+        },
       ],
     });
   }
 
   function removeAttributeRow(index: number) {
-    setForm({ ...form, attributeDefinitions: form.attributeDefinitions.filter((_, i) => i !== index) });
+    setForm({
+      ...form,
+      attributeDefinitions: form.attributeDefinitions.filter((_, i) => i !== index),
+    });
   }
 
-  function updateAttributeRow(index: number, patch: Partial<ProductTypeInput["attributeDefinitions"][number]>) {
+  function updateAttributeRow(
+    index: number,
+    patch: Partial<ProductTypeInput["attributeDefinitions"][number]>
+  ) {
     setForm({
       ...form,
       attributeDefinitions: form.attributeDefinitions.map((attribute, i) =>
@@ -178,14 +219,26 @@ export function ProductTypesPage() {
   }
 
   const columns: DataTableColumn<ProductType>[] = [
-    { key: "name", header: "Nombre", width: "22%", render: (p) => <span className="font-medium text-ink">{p.name}</span> },
-    { key: "description", header: "Descripción", width: "26%", truncate: true, render: (p) => p.description ?? "-" },
+    {
+      key: "name",
+      header: "Nombre",
+      width: "22%",
+      render: (p) => <span className="font-medium text-ink">{p.name}</span>,
+    },
+    {
+      key: "description",
+      header: "Descripción",
+      width: "26%",
+      truncate: true,
+      render: (p) => p.description ?? "-",
+    },
     {
       key: "categories",
       header: "Categorías",
       width: "20%",
       truncate: true,
-      render: (p) => (p.categories.length > 0 ? p.categories.map((c) => c.name).join(", ") : "Sin categoría"),
+      render: (p) =>
+        p.categories.length > 0 ? p.categories.map((c) => c.name).join(", ") : "Sin categoría",
     },
     {
       key: "price",
@@ -213,9 +266,7 @@ export function ProductTypesPage() {
       <PageHeader
         title="Productos"
         actions={
-          tab === "products" && (
-            <PrimaryButton onClick={startCreate}>Nuevo producto</PrimaryButton>
-          )
+          tab === "products" && <PrimaryButton onClick={startCreate}>Nuevo producto</PrimaryButton>
         }
       />
 
@@ -226,7 +277,9 @@ export function ProductTypesPage() {
             type="button"
             onClick={() => setTab(value)}
             className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === value ? "border-accent text-accent-deep" : "border-transparent text-ink-soft hover:text-ink"
+              tab === value
+                ? "border-accent text-accent-deep"
+                : "border-transparent text-ink-soft hover:text-ink"
             }`}
           >
             {value === "products" ? "Productos" : "Categorías"}
@@ -245,7 +298,10 @@ export function ProductTypesPage() {
                 <TextInput
                   placeholder="Nombre del producto…"
                   value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
                 />
               </div>
               <div>
@@ -253,7 +309,10 @@ export function ProductTypesPage() {
                 <CategoryFilterSelect
                   categories={categories}
                   selectedId={categoryFilter}
-                  onChange={(id) => { setCategoryFilter(id); setPage(1); }}
+                  onChange={(id) => {
+                    setCategoryFilter(id);
+                    setPage(1);
+                  }}
                 />
               </div>
             </div>
@@ -268,19 +327,34 @@ export function ProductTypesPage() {
                 rows={data?.items ?? []}
                 rowKey={(p) => p.id}
                 emptyMessage="No hay productos que coincidan con el filtro."
-                pagination={{ mode: "server", page, pageSize: PAGE_SIZE, total: data?.total ?? 0, onPageChange: setPage }}
+                pagination={{
+                  mode: "server",
+                  page,
+                  pageSize: PAGE_SIZE,
+                  total: data?.total ?? 0,
+                  onPageChange: setPage,
+                }}
               />
             )}
           </Card>
         </>
       )}
 
-      <Modal open={showForm} onClose={closeForm} title={editingId ? "Editar producto" : "Nuevo producto"} width="max-w-4xl">
+      <Modal
+        open={showForm}
+        onClose={closeForm}
+        title={editingId ? "Editar producto" : "Nuevo producto"}
+        width="max-w-4xl"
+      >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <FieldLabel>Nombre</FieldLabel>
-              <TextInput required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <TextInput
+                required
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
             </div>
             <div>
               <FieldLabel>Precio</FieldLabel>
@@ -291,7 +365,8 @@ export function ProductTypesPage() {
                 required
                 value={form.basePrice}
                 onChange={(e) => {
-                  if (respectsMinimum(e.target.value)) setForm({ ...form, basePrice: Number(e.target.value) });
+                  if (respectsMinimum(e.target.value))
+                    setForm({ ...form, basePrice: Number(e.target.value) });
                 }}
               />
             </div>
@@ -313,7 +388,9 @@ export function ProductTypesPage() {
             <div className="col-span-2">
               <FieldLabel>Croquis</FieldLabel>
               {!editingId ? (
-                <p className="text-xs text-ink-soft">Guardá el producto primero para poder subir el croquis.</p>
+                <p className="text-xs text-ink-soft">
+                  Guardá el producto primero para poder subir el croquis.
+                </p>
               ) : (
                 <div className="flex items-center gap-3">
                   {editingSketch?.url ? (
@@ -362,7 +439,10 @@ export function ProductTypesPage() {
             </div>
             <div className="space-y-2">
               {form.attributeDefinitions.map((attribute, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 rounded-md border border-line p-2">
+                <div
+                  key={index}
+                  className="grid grid-cols-12 gap-2 rounded-md border border-line p-2"
+                >
                   <div className="col-span-4">
                     <TextInput
                       placeholder="Nombre del atributo"
@@ -376,7 +456,8 @@ export function ProductTypesPage() {
                       onChange={(e) =>
                         updateAttributeRow(index, {
                           dataType: e.target.value as AttributeDataType,
-                          attributeCatalogId: e.target.value === "catalog" ? attribute.attributeCatalogId : null,
+                          attributeCatalogId:
+                            e.target.value === "catalog" ? attribute.attributeCatalogId : null,
                         })
                       }
                     >
@@ -391,7 +472,9 @@ export function ProductTypesPage() {
                     {attribute.dataType === "catalog" ? (
                       <Select
                         value={attribute.attributeCatalogId ?? ""}
-                        onChange={(e) => updateAttributeRow(index, { attributeCatalogId: e.target.value })}
+                        onChange={(e) =>
+                          updateAttributeRow(index, { attributeCatalogId: e.target.value })
+                        }
                       >
                         <option value="">Elegir catálogo…</option>
                         {attributeCatalogs.map((catalog) => (
@@ -424,13 +507,18 @@ export function ProductTypesPage() {
                 </div>
               ))}
               {form.attributeDefinitions.length === 0 && (
-                <p className="text-xs text-ink-soft">Todavía no hay atributos — agregá al menos uno.</p>
+                <p className="text-xs text-ink-soft">
+                  Todavía no hay atributos — agregá al menos uno.
+                </p>
               )}
             </div>
           </div>
 
           <div className="flex gap-2">
-            <PrimaryButton type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+            <PrimaryButton
+              type="submit"
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
               {editingId ? "Guardar cambios" : "Crear producto"}
             </PrimaryButton>
             <SecondaryButton type="button" onClick={closeForm}>

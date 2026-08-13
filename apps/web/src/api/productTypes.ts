@@ -48,11 +48,15 @@ export function deleteProductType(id: string): Promise<void> {
   return apiDelete<void>(`/product-types/${id}`);
 }
 
-export function bulkUpdatePrices(prices: { id: string; basePrice: number }[]): Promise<ProductType[]> {
+export function bulkUpdatePrices(
+  prices: { id: string; basePrice: number }[]
+): Promise<ProductType[]> {
   return apiPatch<ProductType[]>("/product-types/prices/bulk", { prices });
 }
 
-export function applyPercentageIncrease(input: PercentagePriceIncreaseInput): Promise<ProductType[]> {
+export function applyPercentageIncrease(
+  input: PercentagePriceIncreaseInput
+): Promise<ProductType[]> {
   return apiPatch<ProductType[]>("/product-types/prices/percentage", input);
 }
 

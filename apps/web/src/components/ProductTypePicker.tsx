@@ -3,7 +3,11 @@ import { ProductCategory, ProductType } from "@/api/types";
 import { SecondaryButton, TextInput } from "./ui";
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
+  return value.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  });
 }
 
 interface Props {
@@ -13,7 +17,12 @@ interface Props {
   onSelect: (productTypeId: string) => void;
 }
 
-export function ProductTypePicker({ productTypes, categories, selectedProductTypeId, onSelect }: Props) {
+export function ProductTypePicker({
+  productTypes,
+  categories,
+  selectedProductTypeId,
+  onSelect,
+}: Props) {
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
 
@@ -22,7 +31,8 @@ export function ProductTypePicker({ productTypes, categories, selectedProductTyp
   const matches = useMemo(() => {
     const term = query.trim().toLowerCase();
     return productTypes.filter((productType) => {
-      const matchesCategory = !categoryId || productType.categories.some((category) => category.id === categoryId);
+      const matchesCategory =
+        !categoryId || productType.categories.some((category) => category.id === categoryId);
       const matchesTerm = !term || productType.name.toLowerCase().includes(term);
       return matchesCategory && matchesTerm;
     });
@@ -68,7 +78,9 @@ export function ProductTypePicker({ productTypes, categories, selectedProductTyp
             type="button"
             onClick={() => setCategoryId(category.id)}
             className={`rounded-sm px-2 py-1 text-xs font-medium ${
-              categoryId === category.id ? "bg-accent text-paper" : "border border-line text-ink-soft"
+              categoryId === category.id
+                ? "bg-accent text-paper"
+                : "border border-line text-ink-soft"
             }`}
           >
             {category.name}
