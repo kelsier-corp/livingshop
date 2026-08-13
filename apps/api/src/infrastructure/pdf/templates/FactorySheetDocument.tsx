@@ -45,27 +45,37 @@ export function FactorySheetDocument({ order, customer, sketches, referencePhoto
                 </Text>
                 <Text style={baseStyles.emphasisMeta}>Fecha de entrega: {formatDate(item.deliveryDate)}</Text>
               </View>
-              <View style={baseStyles.row}>
-                <View style={{ flex: 1 }}>
-                  {Object.entries(item.attributes).map(([key, value]) => (
-                    <View key={key} style={[baseStyles.row, { marginBottom: 2 }]}>
-                      <Text style={[baseStyles.label, { width: 160 }]}>{key}</Text>
-                      <Text style={baseStyles.value}>{String(value)}</Text>
-                    </View>
-                  ))}
-                  {item.factoryNotes ? (
-                    <View style={{ marginTop: 6 }}>
-                      <Text style={[baseStyles.label, { marginBottom: 2 }]}>Comentarios</Text>
-                      <Text style={baseStyles.value}>{item.factoryNotes}</Text>
-                    </View>
-                  ) : null}
-                </View>
-                {sketch ? (
-                  <View style={{ width: 200, borderWidth: 0.5, borderColor: colors.border, padding: 4 }}>
-                    <Image src={sketch} style={{ width: "100%" }} />
+              <View>
+                {Object.entries(item.attributes).map(([key, value]) => (
+                  <View key={key} style={[baseStyles.row, { marginBottom: 2 }]}>
+                    <Text style={[baseStyles.label, { width: 160 }]}>{key}</Text>
+                    <Text style={baseStyles.value}>{String(value)}</Text>
+                  </View>
+                ))}
+                {item.factoryNotes ? (
+                  <View style={{ marginTop: 6 }}>
+                    <Text style={[baseStyles.label, { marginBottom: 2 }]}>Comentarios</Text>
+                    <Text style={baseStyles.value}>{item.factoryNotes}</Text>
                   </View>
                 ) : null}
               </View>
+              {sketch ? (
+                <View style={{ marginTop: 8 }}>
+                  <Text style={[baseStyles.label, { marginBottom: 4 }]}>Croquis</Text>
+                  <View
+                    style={{
+                      width: "100%",
+                      maxHeight: 260,
+                      alignItems: "center",
+                      borderWidth: 0.5,
+                      borderColor: colors.border,
+                      padding: 4,
+                    }}
+                  >
+                    <Image src={sketch} style={{ maxWidth: "100%", maxHeight: 252, objectFit: "contain" }} />
+                  </View>
+                </View>
+              ) : null}
               {photos.length > 0 && (
                 <View style={{ marginTop: 6 }}>
                   <Text style={[baseStyles.label, { marginBottom: 4 }]}>Fotos de referencia</Text>
