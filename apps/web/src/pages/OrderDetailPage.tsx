@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { pdfUrl } from "@/api/client";
 import { fetchCustomer } from "@/api/customers";
 import { addPayment, deleteAttachment, fetchOrder, updateOrderStatus, uploadAttachment } from "@/api/orders";
+import { fetchPaymentMethods } from "@/api/paymentMethods";
 import { OrderStatus } from "@/api/types";
 import { Collapsible } from "@/components/Collapsible";
 import { ORDER_STATUS_LABEL, OrderStatusBadge } from "@/components/OrderStatusBadge";
@@ -47,7 +48,9 @@ export function OrderDetailPage() {
     queryFn: () => fetchCustomer(order!.customerId),
     enabled: !!order,
   });
-  const [paymentForm, setPaymentForm] = useState({ amount: "", method: "efectivo", note: "" });
+  const { data: paymentMethods = [] } = useQuery({ queryKey: ["payment-methods"], queryFn: fetchPaymentMethods });
+  const activeMethods = paymentMethods.filter((m) => m.active);
+  const [paymentForm, setPaymentForm] = useState({ amount: "", method: "", note: "" });
   const [pendingPreview, setPendingPreview] = useState<{ itemId: string; url: string } | null>(null);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["orders", id] });
@@ -58,10 +61,15 @@ export function OrderDetailPage() {
   });
 
   const paymentMutation = useMutation({
-    mutationFn: () => addPayment(id!, { amount: Number(paymentForm.amount), method: paymentForm.method, note: paymentForm.note || null }),
+    mutationFn: () =>
+      addPayment(id!, {
+        amount: Number(paymentForm.amount),
+        method: paymentForm.method || activeMethods[0]?.name || "",
+        note: paymentForm.note || null,
+      }),
     onSuccess: () => {
       invalidate();
-      setPaymentForm({ amount: "", method: "efectivo", note: "" });
+      setPaymentForm({ amount: "", method: "", note: "" });
     },
   });
 
@@ -301,13 +309,14 @@ export function OrderDetailPage() {
               }}
             />
             <Select
-              value={paymentForm.method}
+              value={paymentForm.method || activeMethods[0]?.name || ""}
               onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value })}
             >
-              <option value="efectivo">Efectivo</option>
-              <option value="debito">Débito</option>
-              <option value="credito">Crédito</option>
-              <option value="transferencia">Transferencia</option>
+              {activeMethods.map((method) => (
+                <option key={method.id} value={method.name}>
+                  {method.name}
+                </option>
+              ))}
             </Select>
             <TextInput
               placeholder="Comentario (opcional)"

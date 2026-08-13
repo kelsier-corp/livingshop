@@ -6,6 +6,7 @@ import { ProductCategoryService } from "@application/catalog/ProductCategoryServ
 import { ProductTypeService } from "@application/catalog/ProductTypeService";
 import { CustomerService } from "@application/customers/CustomerService";
 import { OrderService } from "@application/orders/OrderService";
+import { PaymentMethodService } from "@application/payment-methods/PaymentMethodService";
 import { PdfService } from "@application/pdf/PdfService";
 import { ProductionService } from "@application/production/ProductionService";
 import { SalesService } from "@application/sales/SalesService";
@@ -20,11 +21,13 @@ import {
 } from "@infrastructure/repositories/PrismaCatalogRepository";
 import { PrismaCustomerRepository } from "@infrastructure/repositories/PrismaCustomerRepository";
 import { PrismaOrderRepository } from "@infrastructure/repositories/PrismaOrderRepository";
+import { PrismaPaymentMethodRepository } from "@infrastructure/repositories/PrismaPaymentMethodRepository";
 import { PrismaUserRepository } from "@infrastructure/repositories/PrismaUserRepository";
 import { LocalFileStorage } from "@infrastructure/storage/LocalFileStorage";
 import { AttributeCatalogsController } from "@presentation/http/controllers/attribute-catalogs.controller";
 import { CustomersController } from "@presentation/http/controllers/customers.controller";
 import { OrdersController } from "@presentation/http/controllers/orders.controller";
+import { PaymentMethodsController } from "@presentation/http/controllers/payment-methods.controller";
 import { PdfController } from "@presentation/http/controllers/pdf.controller";
 import { ProductCategoriesController } from "@presentation/http/controllers/product-categories.controller";
 import { ProductionController } from "@presentation/http/controllers/production.controller";
@@ -36,6 +39,7 @@ import { errorHandler } from "@presentation/http/middlewares/errorHandler";
 import { createAttributeCatalogsRouter } from "@presentation/http/routes/attribute-catalogs.routes";
 import { createCustomersRouter } from "@presentation/http/routes/customers.routes";
 import { createOrdersRouter } from "@presentation/http/routes/orders.routes";
+import { createPaymentMethodsRouter } from "@presentation/http/routes/payment-methods.routes";
 import { createPdfRouter } from "@presentation/http/routes/pdf.routes";
 import { createProductCategoriesRouter } from "@presentation/http/routes/product-categories.routes";
 import { createProductionRouter } from "@presentation/http/routes/production.routes";
@@ -50,6 +54,7 @@ export function createApp(): Express {
   const productCategoryRepository = new PrismaProductCategoryRepository(prisma);
   const attributeCatalogRepository = new PrismaAttributeCatalogRepository(prisma);
   const orderRepository = new PrismaOrderRepository(prisma);
+  const paymentMethodRepository = new PrismaPaymentMethodRepository(prisma);
   const fileStorage = new LocalFileStorage(env.uploadsDir);
   const pdfRenderer = new ReactPdfRenderer(env.uploadsDir);
 
@@ -67,6 +72,7 @@ export function createApp(): Express {
   );
   const productionService = new ProductionService(orderRepository);
   const salesService = new SalesService(orderRepository);
+  const paymentMethodService = new PaymentMethodService(paymentMethodRepository);
   const pdfService = new PdfService(orderRepository, customerRepository, pdfRenderer);
 
   const usersController = new UsersController(userService);
@@ -78,6 +84,7 @@ export function createApp(): Express {
   const productionController = new ProductionController(productionService);
   const salesController = new SalesController(salesService);
   const pdfController = new PdfController(pdfService);
+  const paymentMethodsController = new PaymentMethodsController(paymentMethodService);
 
   const app = express();
   app.use(cors());
@@ -106,6 +113,11 @@ export function createApp(): Express {
     createAttributeCatalogsRouter(attributeCatalogsController)
   );
   app.use("/api/orders", currentUserMiddleware, createOrdersRouter(ordersController));
+  app.use(
+    "/api/payment-methods",
+    currentUserMiddleware,
+    createPaymentMethodsRouter(paymentMethodsController)
+  );
   app.use("/api/production", currentUserMiddleware, createProductionRouter(productionController));
   app.use("/api/sales", currentUserMiddleware, createSalesRouter(salesController));
   app.use("/api/pdf", currentUserMiddleware, createPdfRouter(pdfController));
