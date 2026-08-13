@@ -11,7 +11,15 @@ import {
 import { AttributeCatalog, AttributeCatalogValue } from "@/api/types";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { Modal } from "@/components/Modal";
-import { Card, DangerButton, FieldLabel, PageHeader, PrimaryButton, SecondaryButton, TextInput } from "@/components/ui";
+import {
+  Card,
+  DangerButton,
+  FieldLabel,
+  PageHeader,
+  PrimaryButton,
+  SecondaryButton,
+  TextInput,
+} from "@/components/ui";
 import { PaymentMethodsTab } from "./PaymentMethodsTab";
 
 const PAGE_SIZE = 10;
@@ -38,7 +46,8 @@ export function AttributeCatalogsPage() {
   };
 
   const createCatalogMutation = useMutation({
-    mutationFn: ({ name, values }: { name: string; values: string[] }) => createAttributeCatalog(name, values),
+    mutationFn: ({ name, values }: { name: string; values: string[] }) =>
+      createAttributeCatalog(name, values),
     onSuccess: () => {
       invalidate();
       setNewCatalogName("");
@@ -46,7 +55,10 @@ export function AttributeCatalogsPage() {
       setShowCreateForm(false);
     },
   });
-  const deleteCatalogMutation = useMutation({ mutationFn: deleteAttributeCatalog, onSuccess: invalidate });
+  const deleteCatalogMutation = useMutation({
+    mutationFn: deleteAttributeCatalog,
+    onSuccess: invalidate,
+  });
   const addValueMutation = useMutation({
     mutationFn: ({ catalogId, value }: { catalogId: string; value: string }) =>
       addAttributeCatalogValue(catalogId, value),
@@ -56,8 +68,17 @@ export function AttributeCatalogsPage() {
     },
   });
   const toggleValueMutation = useMutation({
-    mutationFn: ({ catalogId, valueId, value, active }: { catalogId: string; valueId: string; value: string; active: boolean }) =>
-      updateAttributeCatalogValue(catalogId, valueId, value, active),
+    mutationFn: ({
+      catalogId,
+      valueId,
+      value,
+      active,
+    }: {
+      catalogId: string;
+      valueId: string;
+      value: string;
+      active: boolean;
+    }) => updateAttributeCatalogValue(catalogId, valueId, value, active),
     onSuccess: invalidate,
   });
   const deleteValueMutation = useMutation({
@@ -66,7 +87,9 @@ export function AttributeCatalogsPage() {
     onSuccess: invalidate,
   });
 
-  const validNewCatalogValues = newCatalogValues.map((value) => value.trim()).filter((value) => value.length > 0);
+  const validNewCatalogValues = newCatalogValues
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
 
   function handleCreateCatalog(e: FormEvent) {
     e.preventDefault();
@@ -84,7 +107,9 @@ export function AttributeCatalogsPage() {
   }
 
   function removeNewCatalogValueRow(index: number) {
-    setNewCatalogValues(newCatalogValues.length > 1 ? newCatalogValues.filter((_, i) => i !== index) : [""]);
+    setNewCatalogValues(
+      newCatalogValues.length > 1 ? newCatalogValues.filter((_, i) => i !== index) : [""]
+    );
   }
 
   function closeCreateForm() {
@@ -103,8 +128,19 @@ export function AttributeCatalogsPage() {
   const managingCatalog = catalogs.find((catalog) => catalog.id === managingCatalogId) ?? null;
 
   const columns: DataTableColumn<AttributeCatalog>[] = [
-    { key: "name", header: "Nombre", width: "40%", render: (c) => <span className="font-medium text-ink">{c.name}</span> },
-    { key: "count", header: "Valores", width: "20%", align: "right", render: (c) => c.values.length },
+    {
+      key: "name",
+      header: "Nombre",
+      width: "40%",
+      render: (c) => <span className="font-medium text-ink">{c.name}</span>,
+    },
+    {
+      key: "count",
+      header: "Valores",
+      width: "20%",
+      align: "right",
+      render: (c) => c.values.length,
+    },
     {
       key: "actions",
       header: "",
@@ -112,7 +148,9 @@ export function AttributeCatalogsPage() {
       align: "right",
       render: (c) => (
         <div className="flex justify-end gap-2">
-          <SecondaryButton onClick={() => setManagingCatalogId(c.id)}>Gestionar valores</SecondaryButton>
+          <SecondaryButton onClick={() => setManagingCatalogId(c.id)}>
+            Gestionar valores
+          </SecondaryButton>
           <DangerButton onClick={() => deleteCatalogMutation.mutate(c.id)}>Eliminar</DangerButton>
         </div>
       ),
@@ -124,7 +162,9 @@ export function AttributeCatalogsPage() {
       key: "value",
       header: "Valor",
       width: "55%",
-      render: (v) => <span className={v.active ? "text-ink" : "text-ink-soft/60 line-through"}>{v.value}</span>,
+      render: (v) => (
+        <span className={v.active ? "text-ink" : "text-ink-soft/60 line-through"}>{v.value}</span>
+      ),
     },
     {
       key: "active",
@@ -137,7 +177,12 @@ export function AttributeCatalogsPage() {
           checked={v.active}
           onChange={(e) =>
             managingCatalogId &&
-            toggleValueMutation.mutate({ catalogId: managingCatalogId, valueId: v.id, value: v.value, active: e.target.checked })
+            toggleValueMutation.mutate({
+              catalogId: managingCatalogId,
+              valueId: v.id,
+              value: v.value,
+              active: e.target.checked,
+            })
           }
         />
       ),
@@ -155,7 +200,10 @@ export function AttributeCatalogsPage() {
             disabled={isLastValue}
             title={isLastValue ? "Un catálogo necesita al menos un valor" : undefined}
             className="text-xs text-signal hover:underline disabled:cursor-not-allowed disabled:text-ink-soft/40 disabled:no-underline"
-            onClick={() => managingCatalogId && deleteValueMutation.mutate({ catalogId: managingCatalogId, valueId: v.id })}
+            onClick={() =>
+              managingCatalogId &&
+              deleteValueMutation.mutate({ catalogId: managingCatalogId, valueId: v.id })
+            }
           >
             quitar
           </button>
@@ -175,7 +223,9 @@ export function AttributeCatalogsPage() {
             type="button"
             onClick={() => setTab(value)}
             className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-              tab === value ? "border-accent text-accent-deep" : "border-transparent text-ink-soft hover:text-ink"
+              tab === value
+                ? "border-accent text-accent-deep"
+                : "border-transparent text-ink-soft hover:text-ink"
             }`}
           >
             {value === "attributes" ? "Atributos" : "Métodos de pago"}
@@ -200,14 +250,25 @@ export function AttributeCatalogsPage() {
                 rows={catalogs}
                 rowKey={(c) => c.id}
                 emptyMessage="Todavía no hay catálogos."
-                pagination={{ mode: "server", page, pageSize: PAGE_SIZE, total: data?.total ?? 0, onPageChange: setPage }}
+                pagination={{
+                  mode: "server",
+                  page,
+                  pageSize: PAGE_SIZE,
+                  total: data?.total ?? 0,
+                  onPageChange: setPage,
+                }}
               />
             )}
           </Card>
         </>
       )}
 
-      <Modal open={showCreateForm} onClose={closeCreateForm} title="Nuevo catálogo" width="max-w-md">
+      <Modal
+        open={showCreateForm}
+        onClose={closeCreateForm}
+        title="Nuevo catálogo"
+        width="max-w-md"
+      >
         <form onSubmit={handleCreateCatalog} className="space-y-4">
           <div>
             <FieldLabel>Nombre</FieldLabel>
@@ -277,7 +338,11 @@ export function AttributeCatalogsPage() {
               pagination={{ mode: "client", pageSize: 8 }}
             />
             <form onSubmit={handleAddValue} className="flex gap-2 border-t border-line pt-4">
-              <TextInput placeholder="Valor nuevo" value={newValue} onChange={(e) => setNewValue(e.target.value)} />
+              <TextInput
+                placeholder="Valor nuevo"
+                value={newValue}
+                onChange={(e) => setNewValue(e.target.value)}
+              />
               <SecondaryButton type="submit" disabled={addValueMutation.isPending}>
                 Agregar
               </SecondaryButton>

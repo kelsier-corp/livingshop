@@ -21,7 +21,10 @@ export function PricesPage() {
   const [percentage, setPercentage] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["product-types", { page, search: debouncedSearch, categoryIds: selectedCategoryIds, priceView: true }],
+    queryKey: [
+      "product-types",
+      { page, search: debouncedSearch, categoryIds: selectedCategoryIds, priceView: true },
+    ],
     queryFn: () =>
       fetchProductTypes({
         page,
@@ -38,7 +41,8 @@ export function PricesPage() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["product-types"] });
 
   const saveMutation = useMutation({
-    mutationFn: () => bulkUpdatePrices(Object.entries(prices).map(([id, basePrice]) => ({ id, basePrice }))),
+    mutationFn: () =>
+      bulkUpdatePrices(Object.entries(prices).map(([id, basePrice]) => ({ id, basePrice }))),
     onSuccess: () => {
       invalidate();
       setPrices({});
@@ -50,7 +54,11 @@ export function PricesPage() {
       applyPercentageIncrease(
         selectedCategoryIds.length === categories.length
           ? { scope: "all", percentage: Number(percentage) }
-          : { scope: "categories", categoryIds: selectedCategoryIds, percentage: Number(percentage) }
+          : {
+              scope: "categories",
+              categoryIds: selectedCategoryIds,
+              percentage: Number(percentage),
+            }
       ),
     onSuccess: () => {
       invalidate();
@@ -66,13 +74,19 @@ export function PricesPage() {
   }
 
   const columns: DataTableColumn<ProductType>[] = [
-    { key: "name", header: "Producto", width: "35%", render: (p) => <span className="font-medium text-ink">{p.name}</span> },
+    {
+      key: "name",
+      header: "Producto",
+      width: "35%",
+      render: (p) => <span className="font-medium text-ink">{p.name}</span>,
+    },
     {
       key: "categories",
       header: "Categorías",
       width: "35%",
       truncate: true,
-      render: (p) => (p.categories.length > 0 ? p.categories.map((c) => c.name).join(", ") : "Sin categoría"),
+      render: (p) =>
+        p.categories.length > 0 ? p.categories.map((c) => c.name).join(", ") : "Sin categoría",
     },
     {
       key: "price",
@@ -102,8 +116,8 @@ export function PricesPage() {
       <Card>
         <FieldLabel className="mb-2">Aumentar por porcentaje</FieldLabel>
         <p className="mb-3 text-sm text-ink-soft">
-          Elegí una, varias o todas las categorías y aplicá un aumento parejo. La selección también filtra la tabla
-          de abajo, para editar precios puntuales solo de esas categorías.
+          Elegí una, varias o todas las categorías y aplicá un aumento parejo. La selección también
+          filtra la tabla de abajo, para editar precios puntuales solo de esas categorías.
         </p>
         <div className="grid grid-cols-2 gap-4">
           <CategorySelector
@@ -123,13 +137,17 @@ export function PricesPage() {
                 className="w-40"
                 value={percentage}
                 onChange={(e) => {
-                  if (isNumericInput(e.target.value, { allowNegative: true })) setPercentage(e.target.value);
+                  if (isNumericInput(e.target.value, { allowNegative: true }))
+                    setPercentage(e.target.value);
                 }}
               />
             </div>
             <PrimaryButton
               disabled={
-                selectedCategoryIds.length === 0 || !percentage || Number(percentage) === 0 || percentageMutation.isPending
+                selectedCategoryIds.length === 0 ||
+                !percentage ||
+                Number(percentage) === 0 ||
+                percentageMutation.isPending
               }
               onClick={() => percentageMutation.mutate()}
             >
@@ -137,7 +155,9 @@ export function PricesPage() {
             </PrimaryButton>
           </div>
         </div>
-        {percentageMutation.isSuccess ? <p className="mt-3 text-sm text-accent-deep">Precios actualizados.</p> : null}
+        {percentageMutation.isSuccess ? (
+          <p className="mt-3 text-sm text-accent-deep">Precios actualizados.</p>
+        ) : null}
       </Card>
 
       <Card className="flex items-end justify-between gap-4">
@@ -146,7 +166,10 @@ export function PricesPage() {
           <TextInput
             placeholder="Nombre del producto…"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
         <div className="text-right">
@@ -156,7 +179,9 @@ export function PricesPage() {
           >
             Guardar cambios individuales
           </PrimaryButton>
-          {hasInvalidPrice && <p className="mt-1 text-xs text-signal">El precio debe ser mayor a 0.</p>}
+          {hasInvalidPrice && (
+            <p className="mt-1 text-xs text-signal">El precio debe ser mayor a 0.</p>
+          )}
         </div>
       </Card>
 
@@ -169,7 +194,13 @@ export function PricesPage() {
             rows={data?.items ?? []}
             rowKey={(p) => p.id}
             emptyMessage="No hay productos que coincidan con el filtro."
-            pagination={{ mode: "server", page, pageSize: PAGE_SIZE, total: data?.total ?? 0, onPageChange: setPage }}
+            pagination={{
+              mode: "server",
+              page,
+              pageSize: PAGE_SIZE,
+              total: data?.total ?? 0,
+              onPageChange: setPage,
+            }}
           />
         )}
       </Card>

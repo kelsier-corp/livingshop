@@ -29,7 +29,9 @@ export function FactorySheetDocument({ order, customer, sketches, referencePhoto
             <Text style={baseStyles.docTitle}>
               {customer.firstName} {customer.lastName}
             </Text>
-            <Text style={baseStyles.emphasisMeta}>Fecha de impresión: {formatDateTime(order.printedAt)}</Text>
+            <Text style={baseStyles.emphasisMeta}>
+              Fecha de impresión: {formatDateTime(order.printedAt)}
+            </Text>
           </View>
         </View>
 
@@ -48,11 +50,18 @@ export function FactorySheetDocument({ order, customer, sketches, referencePhoto
 
             return (
               <View key={item.id} style={{ marginBottom: 16 }} wrap={false}>
-                <View style={[baseStyles.row, { justifyContent: "space-between", alignItems: "flex-end" }]}>
+                <View
+                  style={[
+                    baseStyles.row,
+                    { justifyContent: "space-between", alignItems: "flex-end" },
+                  ]}
+                >
                   <Text style={[baseStyles.sectionTitle, { marginTop: index === 0 ? 0 : 14 }]}>
                     {index + 1}. {item.productTypeName} — Cant. {item.quantity}
                   </Text>
-                  <Text style={baseStyles.emphasisMeta}>Fecha de entrega: {formatDate(item.deliveryDate)}</Text>
+                  <Text style={baseStyles.emphasisMeta}>
+                    Fecha de entrega: {formatDate(item.deliveryDate)}
+                  </Text>
                 </View>
                 <View>
                   {Object.entries(item.attributes).map(([key, value]) => (
@@ -81,7 +90,10 @@ export function FactorySheetDocument({ order, customer, sketches, referencePhoto
                         padding: 4,
                       }}
                     >
-                      <Image src={sketch} style={{ maxWidth: "100%", maxHeight: 252, objectFit: "contain" }} />
+                      <Image
+                        src={sketch}
+                        style={{ maxWidth: "100%", maxHeight: 252, objectFit: "contain" }}
+                      />
                     </View>
                   </View>
                 ) : null}
@@ -92,7 +104,12 @@ export function FactorySheetDocument({ order, customer, sketches, referencePhoto
                       {photos.map((photo, photoIndex) => (
                         <View
                           key={photoIndex}
-                          style={{ width: 90, borderWidth: 0.5, borderColor: colors.border, padding: 3 }}
+                          style={{
+                            width: 90,
+                            borderWidth: 0.5,
+                            borderColor: colors.border,
+                            padding: 3,
+                          }}
                         >
                           <Image src={photo} style={{ width: "100%" }} />
                         </View>

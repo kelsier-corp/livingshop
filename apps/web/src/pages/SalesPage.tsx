@@ -17,7 +17,11 @@ function formatDate(value: string | null): string {
 }
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
+  return value.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  });
 }
 
 export function SalesPage() {
@@ -26,7 +30,9 @@ export function SalesPage() {
   const [orderQuery, setOrderQuery] = useState("");
   const debouncedCustomerQuery = useDebouncedValue(customerQuery);
   const debouncedOrderQuery = useDebouncedValue(orderQuery);
-  const orderNumber = /^\d+$/.test(debouncedOrderQuery.trim()) ? Number(debouncedOrderQuery.trim()) : undefined;
+  const orderNumber = /^\d+$/.test(debouncedOrderQuery.trim())
+    ? Number(debouncedOrderQuery.trim())
+    : undefined;
 
   const { data, isLoading } = useQuery({
     queryKey: ["sales", { page, customerQuery: debouncedCustomerQuery, orderNumber }],
@@ -45,13 +51,22 @@ export function SalesPage() {
       header: "Orden",
       width: "8%",
       render: (row) => (
-        <Link to={`/orders/${row.orderId}`} className="font-mono font-medium text-accent hover:underline">
+        <Link
+          to={`/orders/${row.orderId}`}
+          className="font-mono font-medium text-accent hover:underline"
+        >
           #{row.orderNumber}
         </Link>
       ),
     },
     { key: "date", header: "Fecha", width: "10%", render: (row) => formatDate(row.orderDate) },
-    { key: "customer", header: "Cliente", width: "16%", truncate: true, render: (row) => row.customerFullName },
+    {
+      key: "customer",
+      header: "Cliente",
+      width: "16%",
+      truncate: true,
+      render: (row) => row.customerFullName,
+    },
     {
       key: "products",
       header: "Productos y entrega",
@@ -66,10 +81,33 @@ export function SalesPage() {
         </div>
       ),
     },
-    { key: "total", header: "Total", width: "12%", align: "right", render: (row) => <span className="font-mono">{formatCurrency(row.totalAmount)}</span> },
-    { key: "paid", header: "Pagado", width: "12%", align: "right", render: (row) => <span className="font-mono">{formatCurrency(row.amountPaid)}</span> },
-    { key: "balance", header: "Saldo", width: "10%", align: "right", render: (row) => <span className="font-mono">{formatCurrency(row.balance)}</span> },
-    { key: "status", header: "Estado", width: "10%", render: (row) => <OrderStatusBadge status={row.status} /> },
+    {
+      key: "total",
+      header: "Total",
+      width: "12%",
+      align: "right",
+      render: (row) => <span className="font-mono">{formatCurrency(row.totalAmount)}</span>,
+    },
+    {
+      key: "paid",
+      header: "Pagado",
+      width: "12%",
+      align: "right",
+      render: (row) => <span className="font-mono">{formatCurrency(row.amountPaid)}</span>,
+    },
+    {
+      key: "balance",
+      header: "Saldo",
+      width: "10%",
+      align: "right",
+      render: (row) => <span className="font-mono">{formatCurrency(row.balance)}</span>,
+    },
+    {
+      key: "status",
+      header: "Estado",
+      width: "10%",
+      render: (row) => <OrderStatusBadge status={row.status} />,
+    },
   ];
 
   return (
@@ -90,7 +128,10 @@ export function SalesPage() {
             <TextInput
               placeholder="Nombre o apellido…"
               value={customerQuery}
-              onChange={(e) => { setCustomerQuery(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setCustomerQuery(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
           <div>
@@ -98,7 +139,10 @@ export function SalesPage() {
             <TextInput
               placeholder="Número exacto, ej. 7901"
               value={orderQuery}
-              onChange={(e) => { setOrderQuery(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setOrderQuery(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
         </div>
@@ -113,7 +157,13 @@ export function SalesPage() {
             rows={data?.items ?? []}
             rowKey={(row) => row.orderId}
             emptyMessage="No hay ventas que coincidan con la búsqueda."
-            pagination={{ mode: "server", page, pageSize: PAGE_SIZE, total: data?.total ?? 0, onPageChange: setPage }}
+            pagination={{
+              mode: "server",
+              page,
+              pageSize: PAGE_SIZE,
+              total: data?.total ?? 0,
+              onPageChange: setPage,
+            }}
           />
         )}
       </Card>

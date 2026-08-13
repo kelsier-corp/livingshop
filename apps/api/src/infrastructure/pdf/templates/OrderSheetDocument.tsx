@@ -39,7 +39,9 @@ export function OrderSheetDocument({ order, customer }: Props) {
             {customer.mobilePhone ? (
               <Text style={baseStyles.label}>Celular: {customer.mobilePhone}</Text>
             ) : null}
-            {customer.phone ? <Text style={baseStyles.label}>Teléfono: {customer.phone}</Text> : null}
+            {customer.phone ? (
+              <Text style={baseStyles.label}>Teléfono: {customer.phone}</Text>
+            ) : null}
             {customer.email ? <Text style={baseStyles.label}>{customer.email}</Text> : null}
           </View>
         </View>
@@ -49,8 +51,12 @@ export function OrderSheetDocument({ order, customer }: Props) {
           <Text style={[baseStyles.tableHeaderCell, { flex: 3 }]}>Producto</Text>
           <Text style={[baseStyles.tableHeaderCell, { flex: 3.5 }]}>Especificaciones</Text>
           <Text style={[baseStyles.tableHeaderCell, { flex: 1.3 }]}>Entrega</Text>
-          <Text style={[baseStyles.tableHeaderCell, { flex: 0.8, textAlign: "center" }]}>Cant.</Text>
-          <Text style={[baseStyles.tableHeaderCell, { flex: 1.4, textAlign: "right" }]}>Precio</Text>
+          <Text style={[baseStyles.tableHeaderCell, { flex: 0.8, textAlign: "center" }]}>
+            Cant.
+          </Text>
+          <Text style={[baseStyles.tableHeaderCell, { flex: 1.4, textAlign: "right" }]}>
+            Precio
+          </Text>
           <Text style={[baseStyles.tableHeaderCell, { flex: 1.4, textAlign: "right" }]}>Total</Text>
         </View>
         {order.items.map((item) => (
@@ -58,13 +64,20 @@ export function OrderSheetDocument({ order, customer }: Props) {
             <Text style={[baseStyles.tableCell, { flex: 3 }]}>{item.productTypeName}</Text>
             <View style={{ flex: 3.5 }}>
               {Object.entries(item.attributes).map(([key, value]) => (
-                <Text key={key} style={[baseStyles.tableCell, { fontSize: 7.5, color: colors.muted }]}>
+                <Text
+                  key={key}
+                  style={[baseStyles.tableCell, { fontSize: 7.5, color: colors.muted }]}
+                >
                   {key}: {String(value)}
                 </Text>
               ))}
             </View>
-            <Text style={[baseStyles.tableCell, { flex: 1.3 }]}>{formatDate(item.deliveryDate)}</Text>
-            <Text style={[baseStyles.tableCell, { flex: 0.8, textAlign: "center" }]}>{item.quantity}</Text>
+            <Text style={[baseStyles.tableCell, { flex: 1.3 }]}>
+              {formatDate(item.deliveryDate)}
+            </Text>
+            <Text style={[baseStyles.tableCell, { flex: 0.8, textAlign: "center" }]}>
+              {item.quantity}
+            </Text>
             <Text style={[baseStyles.tableCell, { flex: 1.4, textAlign: "right" }]}>
               {formatCurrency(item.unitPrice)}
             </Text>

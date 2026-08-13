@@ -67,7 +67,8 @@ export function CustomerPicker({ selectedCustomerId, onSelect }: Props) {
             {selectedCustomer.firstName} {selectedCustomer.lastName}
           </p>
           <p className="text-xs text-ink-soft">
-            {[selectedCustomer.mobilePhone, selectedCustomer.email].filter(Boolean).join(" · ") || "-"}
+            {[selectedCustomer.mobilePhone, selectedCustomer.email].filter(Boolean).join(" · ") ||
+              "-"}
           </p>
         </div>
         <SecondaryButton type="button" onClick={handleClear}>
@@ -107,7 +108,9 @@ export function CustomerPicker({ selectedCustomerId, onSelect }: Props) {
               ))}
             </ul>
           ) : (
-            <p className="px-3 py-2 text-sm text-ink-soft">No se encontraron clientes con ese dato.</p>
+            <p className="px-3 py-2 text-sm text-ink-soft">
+              No se encontraron clientes con ese dato.
+            </p>
           )}
           <button
             type="button"
@@ -150,14 +153,20 @@ export function CustomerPicker({ selectedCustomerId, onSelect }: Props) {
               <FieldLabel>Dirección de entrega</FieldLabel>
               <TextInput
                 value={newCustomer.deliveryAddress ?? ""}
-                onChange={(e) => setNewCustomer({ ...newCustomer, deliveryAddress: e.target.value })}
+                onChange={(e) =>
+                  setNewCustomer({ ...newCustomer, deliveryAddress: e.target.value })
+                }
               />
             </div>
           </div>
           <div className="mt-3 flex gap-2">
             <PrimaryButton
               type="button"
-              disabled={!newCustomer.firstName.trim() || !newCustomer.lastName.trim() || createMutation.isPending}
+              disabled={
+                !newCustomer.firstName.trim() ||
+                !newCustomer.lastName.trim() ||
+                createMutation.isPending
+              }
               onClick={() => createMutation.mutate(newCustomer)}
             >
               Guardar cliente

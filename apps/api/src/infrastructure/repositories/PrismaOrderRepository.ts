@@ -62,7 +62,12 @@ export class PrismaOrderRepository implements OrderRepository {
     if (query.dateTo) dateFilter.lte = query.dateTo;
 
     const matchingCustomerIds = query.customerQuery
-      ? await findIdsByUnaccentedSearch(this.prisma, "customers", ["firstName", "lastName"], query.customerQuery)
+      ? await findIdsByUnaccentedSearch(
+          this.prisma,
+          "customers",
+          ["firstName", "lastName"],
+          query.customerQuery
+        )
       : null;
 
     const where: Prisma.OrderWhereInput = {
@@ -104,7 +109,8 @@ export class PrismaOrderRepository implements OrderRepository {
     }
     if (query.dateFrom) conditions.push(Prisma.sql`o.date >= ${query.dateFrom}`);
     if (query.dateTo) conditions.push(Prisma.sql`o.date <= ${query.dateTo}`);
-    const whereSql = conditions.length > 0 ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}` : Prisma.sql``;
+    const whereSql =
+      conditions.length > 0 ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}` : Prisma.sql``;
 
     const countRows = await this.prisma.$queryRaw<{ count: bigint }[]>`
       SELECT COUNT(*)::bigint as count
@@ -126,9 +132,14 @@ export class PrismaOrderRepository implements OrderRepository {
     `;
 
     const ids = idRows.map((row) => row.id);
-    const rows = await this.prisma.order.findMany({ where: { id: { in: ids } }, include: orderInclude });
+    const rows = await this.prisma.order.findMany({
+      where: { id: { in: ids } },
+      include: orderInclude,
+    });
     const rowsById = new Map(rows.map((row) => [row.id, row]));
-    const ordered = ids.map((id) => rowsById.get(id)).filter((row): row is OrderRow => row !== undefined);
+    const ordered = ids
+      .map((id) => rowsById.get(id))
+      .filter((row): row is OrderRow => row !== undefined);
 
     return { items: ordered.map(toOrderDomain), total, page: query.page, pageSize: query.pageSize };
   }
@@ -228,8 +239,12 @@ export class PrismaOrderRepository implements OrderRepository {
     return toStageDomain(row);
   }
 
-  async listItemsWithContext(query: ProductionListQuery): Promise<PageResult<OrderItemWithContext>> {
-    const where: Prisma.OrderItemWhereInput = { order: { status: { in: ["confirmed", "in_production"] } } };
+  async listItemsWithContext(
+    query: ProductionListQuery
+  ): Promise<PageResult<OrderItemWithContext>> {
+    const where: Prisma.OrderItemWhereInput = {
+      order: { status: { in: ["confirmed", "in_production"] } },
+    };
 
     if (query.deliveryDate) {
       const start = new Date(query.deliveryDate);
@@ -250,7 +265,12 @@ export class PrismaOrderRepository implements OrderRepository {
       this.prisma.orderItem.count({ where }),
     ]);
 
-    return { items: rows.map(toOrderItemWithContext), total, page: query.page, pageSize: query.pageSize };
+    return {
+      items: rows.map(toOrderItemWithContext),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    };
   }
 
   async listAllItemsWithContext(): Promise<OrderItemWithContext[]> {
@@ -264,7 +284,12 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async listSalesRows(query: SalesListQuery): Promise<PageResult<SalesRow>> {
     const matchingCustomerIds = query.customerQuery
-      ? await findIdsByUnaccentedSearch(this.prisma, "customers", ["firstName", "lastName"], query.customerQuery)
+      ? await findIdsByUnaccentedSearch(
+          this.prisma,
+          "customers",
+          ["firstName", "lastName"],
+          query.customerQuery
+        )
       : null;
 
     const where: Prisma.OrderWhereInput = {

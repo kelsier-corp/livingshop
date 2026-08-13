@@ -7,7 +7,9 @@ export interface ProductionListParams {
   deliveryDate?: string;
 }
 
-export function fetchProductionBoard(params: ProductionListParams): Promise<PageResult<OrderItemWithContext>> {
+export function fetchProductionBoard(
+  params: ProductionListParams
+): Promise<PageResult<OrderItemWithContext>> {
   return apiGet<PageResult<OrderItemWithContext>>(`/production/board${toQueryString(params)}`);
 }
 

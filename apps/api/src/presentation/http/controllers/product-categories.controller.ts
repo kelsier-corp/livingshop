@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { ProductCategoryService } from "@application/catalog/ProductCategoryService";
-import { productCategoryInputSchema, productCategoryListQuerySchema } from "../validators/catalog.validators";
+import {
+  productCategoryInputSchema,
+  productCategoryListQuerySchema,
+} from "../validators/catalog.validators";
 import { param } from "../utils/param";
 
 export class ProductCategoriesController {

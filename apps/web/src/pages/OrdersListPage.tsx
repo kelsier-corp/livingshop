@@ -5,7 +5,14 @@ import { fetchOrders } from "@/api/orders";
 import { Order } from "@/api/types";
 import { DataTable, DataTableColumn, DataTableSort } from "@/components/DataTable";
 import { OrderStatusBadge } from "@/components/OrderStatusBadge";
-import { Card, FieldLabel, PageHeader, PrimaryButton, SecondaryButton, TextInput } from "@/components/ui";
+import {
+  Card,
+  FieldLabel,
+  PageHeader,
+  PrimaryButton,
+  SecondaryButton,
+  TextInput,
+} from "@/components/ui";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { isNumericInput, respectsMinimum } from "@/utils/number";
 
@@ -17,7 +24,11 @@ function formatDate(value: string | null): string {
 }
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
+  return value.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  });
 }
 
 function earliestDelivery(items: { deliveryDate: string }[]): string | null {
@@ -42,7 +53,15 @@ export function OrdersListPage() {
   const { data, isLoading } = useQuery({
     queryKey: [
       "orders",
-      { page, numberFilter: debouncedNumberFilter, customerQuery: debouncedCustomerQuery, dateFrom, dateTo, sortBy, sortDirection },
+      {
+        page,
+        numberFilter: debouncedNumberFilter,
+        customerQuery: debouncedCustomerQuery,
+        dateFrom,
+        dateTo,
+        sortBy,
+        sortDirection,
+      },
     ],
     queryFn: () =>
       fetchOrders({
@@ -126,9 +145,18 @@ export function OrdersListPage() {
       header: "Total",
       width: "12%",
       align: "right",
-      render: (order) => <span className="font-mono">{order.totals ? formatCurrency(order.totals.totalAmount) : "-"}</span>,
+      render: (order) => (
+        <span className="font-mono">
+          {order.totals ? formatCurrency(order.totals.totalAmount) : "-"}
+        </span>
+      ),
     },
-    { key: "status", header: "Estado", width: "12%", render: (order) => <OrderStatusBadge status={order.status} /> },
+    {
+      key: "status",
+      header: "Estado",
+      width: "12%",
+      render: (order) => <OrderStatusBadge status={order.status} />,
+    },
     {
       key: "actions",
       header: "",
@@ -163,7 +191,10 @@ export function OrdersListPage() {
               placeholder="ej. 7901"
               value={numberFilter}
               onChange={(e) => {
-                if (isNumericInput(e.target.value, { allowDecimal: false }) && respectsMinimum(e.target.value)) {
+                if (
+                  isNumericInput(e.target.value, { allowDecimal: false }) &&
+                  respectsMinimum(e.target.value)
+                ) {
                   updateFilter(setNumberFilter, e.target.value);
                 }
               }}
@@ -179,11 +210,19 @@ export function OrdersListPage() {
           </div>
           <div>
             <FieldLabel>Desde</FieldLabel>
-            <TextInput type="date" value={dateFrom} onChange={(e) => updateFilter(setDateFrom, e.target.value)} />
+            <TextInput
+              type="date"
+              value={dateFrom}
+              onChange={(e) => updateFilter(setDateFrom, e.target.value)}
+            />
           </div>
           <div>
             <FieldLabel>Hasta</FieldLabel>
-            <TextInput type="date" value={dateTo} onChange={(e) => updateFilter(setDateTo, e.target.value)} />
+            <TextInput
+              type="date"
+              value={dateTo}
+              onChange={(e) => updateFilter(setDateTo, e.target.value)}
+            />
           </div>
         </div>
         <div className="mt-3 flex justify-end">

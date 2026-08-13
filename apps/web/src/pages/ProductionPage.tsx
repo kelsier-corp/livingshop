@@ -20,19 +20,47 @@ export function ProductionPage() {
   const [deliveryDateFilter, setDeliveryDateFilter] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["production-board", page, deliveryDateFilter],
-    queryFn: () => fetchProductionBoard({ page, pageSize: PAGE_SIZE, deliveryDate: deliveryDateFilter || undefined }),
+    queryFn: () =>
+      fetchProductionBoard({
+        page,
+        pageSize: PAGE_SIZE,
+        deliveryDate: deliveryDateFilter || undefined,
+      }),
   });
 
   const toggleMutation = useMutation({
-    mutationFn: ({ orderItemId, stage, completed }: { orderItemId: string; stage: ProductionStage; completed: boolean }) =>
-      toggleProductionStage(orderItemId, stage, completed),
+    mutationFn: ({
+      orderItemId,
+      stage,
+      completed,
+    }: {
+      orderItemId: string;
+      stage: ProductionStage;
+      completed: boolean;
+    }) => toggleProductionStage(orderItemId, stage, completed),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["production-board"] }),
   });
 
   const columns: DataTableColumn<OrderItemWithContext>[] = [
-    { key: "delivery", header: "Entrega", width: "9%", render: (row) => formatDate(row.deliveryDate) },
-    { key: "order", header: "Orden", width: "7%", render: (row) => <span className="font-mono text-ink-soft">#{row.orderNumber}</span> },
-    { key: "product", header: "Producto", width: "20%", truncate: true, render: (row) => <span className="font-medium text-ink">{row.productTypeName}</span> },
+    {
+      key: "delivery",
+      header: "Entrega",
+      width: "9%",
+      render: (row) => formatDate(row.deliveryDate),
+    },
+    {
+      key: "order",
+      header: "Orden",
+      width: "7%",
+      render: (row) => <span className="font-mono text-ink-soft">#{row.orderNumber}</span>,
+    },
+    {
+      key: "product",
+      header: "Producto",
+      width: "20%",
+      truncate: true,
+      render: (row) => <span className="font-medium text-ink">{row.productTypeName}</span>,
+    },
     { key: "qty", header: "Cant.", width: "6%", render: (row) => row.quantity },
     ...PRODUCTION_STAGES.map<DataTableColumn<OrderItemWithContext>>((stage) => ({
       key: stage,
@@ -45,7 +73,9 @@ export function ProductionPage() {
           <input
             type="checkbox"
             checked={status?.completed ?? false}
-            onChange={(e) => toggleMutation.mutate({ orderItemId: row.id, stage, completed: e.target.checked })}
+            onChange={(e) =>
+              toggleMutation.mutate({ orderItemId: row.id, stage, completed: e.target.checked })
+            }
           />
         );
       },
@@ -86,7 +116,13 @@ export function ProductionPage() {
             rows={data?.items ?? []}
             rowKey={(row) => row.id}
             emptyMessage="Todavía no hay productos en producción."
-            pagination={{ mode: "server", page, pageSize: PAGE_SIZE, total: data?.total ?? 0, onPageChange: setPage }}
+            pagination={{
+              mode: "server",
+              page,
+              pageSize: PAGE_SIZE,
+              total: data?.total ?? 0,
+              onPageChange: setPage,
+            }}
           />
         )}
       </Card>

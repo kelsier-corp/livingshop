@@ -7,7 +7,9 @@ export interface ProductCategoryListParams {
   search?: string;
 }
 
-export function fetchProductCategories(params: ProductCategoryListParams): Promise<PageResult<ProductCategory>> {
+export function fetchProductCategories(
+  params: ProductCategoryListParams
+): Promise<PageResult<ProductCategory>> {
   return apiGet<PageResult<ProductCategory>>(`/product-categories${toQueryString(params)}`);
 }
 

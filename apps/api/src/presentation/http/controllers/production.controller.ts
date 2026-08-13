@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import { ProductionService } from "@application/production/ProductionService";
 import { ProductionStage } from "@domain/entities/enums";
-import { productionListQuerySchema, toggleStageInputSchema } from "../validators/production.validators";
+import {
+  productionListQuerySchema,
+  toggleStageInputSchema,
+} from "../validators/production.validators";
 import { param } from "../utils/param";
 
 export class ProductionController {

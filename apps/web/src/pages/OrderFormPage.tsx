@@ -11,7 +11,15 @@ import { CatalogValueSelect } from "@/components/CatalogValueSelect";
 import { Collapsible } from "@/components/Collapsible";
 import { CustomerPicker } from "@/components/CustomerPicker";
 import { ProductTypePicker } from "@/components/ProductTypePicker";
-import { Card, FieldLabel, PageHeader, PrimaryButton, SecondaryButton, TextArea, TextInput } from "@/components/ui";
+import {
+  Card,
+  FieldLabel,
+  PageHeader,
+  PrimaryButton,
+  SecondaryButton,
+  TextArea,
+  TextInput,
+} from "@/components/ui";
 import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 interface CustomAttribute {
@@ -54,13 +62,20 @@ function buildAttributes(item: ItemDraft): AttributeValues {
 }
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
+  return value.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  });
 }
 
 export function OrderFormPage() {
   const navigate = useNavigate();
   const { currentUser } = useCurrentUser();
-  const { data: productTypes = [] } = useQuery({ queryKey: ["product-types-all"], queryFn: fetchAllProductTypes });
+  const { data: productTypes = [] } = useQuery({
+    queryKey: ["product-types-all"],
+    queryFn: fetchAllProductTypes,
+  });
   const { data: productCategories = [] } = useQuery({
     queryKey: ["product-categories-all"],
     queryFn: fetchAllProductCategories,
@@ -102,18 +117,28 @@ export function OrderFormPage() {
   }
 
   function addCustomAttribute(index: number) {
-    updateItem(index, { customAttributes: [...items[index].customAttributes, { key: "", value: "" }] });
+    updateItem(index, {
+      customAttributes: [...items[index].customAttributes, { key: "", value: "" }],
+    });
   }
 
-  function updateCustomAttribute(itemIndex: number, attrIndex: number, patch: Partial<CustomAttribute>) {
+  function updateCustomAttribute(
+    itemIndex: number,
+    attrIndex: number,
+    patch: Partial<CustomAttribute>
+  ) {
     const item = items[itemIndex];
-    const customAttributes = item.customAttributes.map((attr, i) => (i === attrIndex ? { ...attr, ...patch } : attr));
+    const customAttributes = item.customAttributes.map((attr, i) =>
+      i === attrIndex ? { ...attr, ...patch } : attr
+    );
     updateItem(itemIndex, { customAttributes });
   }
 
   function removeCustomAttribute(itemIndex: number, attrIndex: number) {
     const item = items[itemIndex];
-    updateItem(itemIndex, { customAttributes: item.customAttributes.filter((_, i) => i !== attrIndex) });
+    updateItem(itemIndex, {
+      customAttributes: item.customAttributes.filter((_, i) => i !== attrIndex),
+    });
   }
 
   function handleSubmit(e: FormEvent) {
@@ -213,7 +238,10 @@ export function OrderFormPage() {
                       required
                       value={item.quantity}
                       onChange={(e) => {
-                        if (isNumericInput(e.target.value, { allowDecimal: false }) && respectsMinimum(e.target.value, 1)) {
+                        if (
+                          isNumericInput(e.target.value, { allowDecimal: false }) &&
+                          respectsMinimum(e.target.value, 1)
+                        ) {
                           updateItem(index, { quantity: Number(e.target.value) });
                         }
                       }}
@@ -234,7 +262,9 @@ export function OrderFormPage() {
                   {productType && (
                     <div>
                       <FieldLabel>Precio unitario</FieldLabel>
-                      <p className="pt-1.5 font-mono text-sm text-ink">{formatCurrency(productType.basePrice)}</p>
+                      <p className="pt-1.5 font-mono text-sm text-ink">
+                        {formatCurrency(productType.basePrice)}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -250,11 +280,18 @@ export function OrderFormPage() {
                         {attribute.dataType === "catalog" ? (
                           <CatalogValueSelect
                             required={attribute.required}
-                            values={attributeCatalogs.find((catalog) => catalog.id === attribute.attributeCatalogId)?.values ?? []}
+                            values={
+                              attributeCatalogs.find(
+                                (catalog) => catalog.id === attribute.attributeCatalogId
+                              )?.values ?? []
+                            }
                             value={item.attributeValues[attribute.name] ?? ""}
                             onChange={(value) =>
                               updateItem(index, {
-                                attributeValues: { ...item.attributeValues, [attribute.name]: value },
+                                attributeValues: {
+                                  ...item.attributeValues,
+                                  [attribute.name]: value,
+                                },
                               })
                             }
                           />
@@ -264,7 +301,10 @@ export function OrderFormPage() {
                             value={item.attributeValues[attribute.name] ?? ""}
                             onChange={(e) =>
                               updateItem(index, {
-                                attributeValues: { ...item.attributeValues, [attribute.name]: e.target.value },
+                                attributeValues: {
+                                  ...item.attributeValues,
+                                  [attribute.name]: e.target.value,
+                                },
                               })
                             }
                           />
@@ -276,7 +316,9 @@ export function OrderFormPage() {
 
                 <div className="mt-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <FieldLabel className="mb-0">Campos personalizados para este producto</FieldLabel>
+                    <FieldLabel className="mb-0">
+                      Campos personalizados para este producto
+                    </FieldLabel>
                     <SecondaryButton type="button" onClick={() => addCustomAttribute(index)}>
                       Agregar campo
                     </SecondaryButton>
@@ -288,14 +330,18 @@ export function OrderFormPage() {
                           <TextInput
                             placeholder="Nombre del campo"
                             value={custom.key}
-                            onChange={(e) => updateCustomAttribute(index, attrIndex, { key: e.target.value })}
+                            onChange={(e) =>
+                              updateCustomAttribute(index, attrIndex, { key: e.target.value })
+                            }
                           />
                         </div>
                         <div className="col-span-7">
                           <TextInput
                             placeholder="Valor"
                             value={custom.value}
-                            onChange={(e) => updateCustomAttribute(index, attrIndex, { value: e.target.value })}
+                            onChange={(e) =>
+                              updateCustomAttribute(index, attrIndex, { value: e.target.value })
+                            }
                           />
                         </div>
                         <button
