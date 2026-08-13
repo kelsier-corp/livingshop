@@ -12,6 +12,7 @@ import {
 } from "@/api/productTypes";
 import { fetchAttributeCatalogs } from "@/api/attributeCatalogs";
 import { AttributeDataType, ProductType } from "@/api/types";
+import { AttributeCatalogSelect } from "@/components/AttributeCatalogSelect";
 import { CategoryFilterSelect } from "@/components/CategoryFilterSelect";
 import { CategorySelector } from "@/components/CategorySelector";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
@@ -410,17 +411,11 @@ export function ProductTypesPage() {
                   </div>
                   <div className="col-span-3">
                     {attribute.dataType === "catalog" ? (
-                      <Select
-                        value={attribute.attributeCatalogId ?? ""}
-                        onChange={(e) => updateAttributeRow(index, { attributeCatalogId: e.target.value })}
-                      >
-                        <option value="">Elegir catálogo…</option>
-                        {attributeCatalogs.map((catalog) => (
-                          <option key={catalog.id} value={catalog.id}>
-                            {catalog.name}
-                          </option>
-                        ))}
-                      </Select>
+                      <AttributeCatalogSelect
+                        catalogs={attributeCatalogs}
+                        selectedId={attribute.attributeCatalogId}
+                        onChange={(id) => updateAttributeRow(index, { attributeCatalogId: id })}
+                      />
                     ) : (
                       <span className="text-xs text-ink-soft">Texto libre en la orden</span>
                     )}
