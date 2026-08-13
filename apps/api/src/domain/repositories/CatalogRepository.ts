@@ -1,5 +1,6 @@
 import {
   AttributeCatalog,
+  AttributeCatalogListQuery,
   AttributeCatalogValue,
   ProductCategory,
   ProductCategoryListQuery,
@@ -32,6 +33,7 @@ export interface ProductCategoryRepository {
 }
 
 export interface AttributeCatalogRepository {
+  list(query: AttributeCatalogListQuery): Promise<PageResult<AttributeCatalog>>;
   findAll(): Promise<AttributeCatalog[]>;
   findById(id: string): Promise<AttributeCatalog | null>;
   create(name: string, values: string[]): Promise<AttributeCatalog>;

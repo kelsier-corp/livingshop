@@ -5,6 +5,7 @@ import { requireRole } from "../middlewares/requireRole";
 export function createAttributeCatalogsRouter(controller: AttributeCatalogsController): Router {
   const router = Router();
   router.get("/", requireRole("admin", "sales"), controller.list);
+  router.get("/all", requireRole("admin", "sales"), controller.listAll);
   router.get("/:id", requireRole("admin", "sales"), controller.getById);
   router.post("/", requireRole("admin"), controller.create);
   router.put("/:id", requireRole("admin"), controller.update);

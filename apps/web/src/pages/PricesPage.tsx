@@ -21,8 +21,14 @@ export function PricesPage() {
   const [percentage, setPercentage] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["product-types", { page, search: debouncedSearch, priceView: true }],
-    queryFn: () => fetchProductTypes({ page, pageSize: PAGE_SIZE, search: debouncedSearch || undefined }),
+    queryKey: ["product-types", { page, search: debouncedSearch, categoryIds: selectedCategoryIds, priceView: true }],
+    queryFn: () =>
+      fetchProductTypes({
+        page,
+        pageSize: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+        categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+      }),
   });
   const { data: categories = [] } = useQuery({
     queryKey: ["product-categories-all"],
@@ -96,11 +102,18 @@ export function PricesPage() {
       <Card>
         <FieldLabel className="mb-2">Aumentar por porcentaje</FieldLabel>
         <p className="mb-3 text-sm text-ink-soft">
-          Elegí una, varias o todas las categorías y aplicá un aumento parejo. Para un producto puntual, editá su
-          precio directamente en la tabla de abajo.
+          Elegí una, varias o todas las categorías y aplicá un aumento parejo. La selección también filtra la tabla
+          de abajo, para editar precios puntuales solo de esas categorías.
         </p>
         <div className="grid grid-cols-2 gap-4">
-          <CategorySelector categories={categories} selectedIds={selectedCategoryIds} onChange={setSelectedCategoryIds} />
+          <CategorySelector
+            categories={categories}
+            selectedIds={selectedCategoryIds}
+            onChange={(categoryIds) => {
+              setSelectedCategoryIds(categoryIds);
+              setPage(1);
+            }}
+          />
           <div className="flex items-end gap-2">
             <div>
               <FieldLabel>Porcentaje (ej. 5 o -10)</FieldLabel>

@@ -3,6 +3,7 @@ import { AttributeCatalogService } from "@application/attribute-catalogs/Attribu
 import { param } from "../utils/param";
 import {
   attributeCatalogCreateSchema,
+  attributeCatalogListQuerySchema,
   attributeCatalogUpdateSchema,
   attributeCatalogValueInputSchema,
   attributeCatalogValueUpdateSchema,
@@ -11,8 +12,13 @@ import {
 export class AttributeCatalogsController {
   constructor(private readonly attributeCatalogService: AttributeCatalogService) {}
 
-  list = async (_req: Request, res: Response): Promise<void> => {
-    res.json(await this.attributeCatalogService.list());
+  list = async (req: Request, res: Response): Promise<void> => {
+    const query = attributeCatalogListQuerySchema.parse(req.query);
+    res.json(await this.attributeCatalogService.list(query));
+  };
+
+  listAll = async (_req: Request, res: Response): Promise<void> => {
+    res.json(await this.attributeCatalogService.listAll());
   };
 
   getById = async (req: Request, res: Response): Promise<void> => {

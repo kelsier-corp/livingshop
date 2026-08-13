@@ -14,13 +14,17 @@ import { Modal } from "@/components/Modal";
 import { Card, DangerButton, FieldLabel, PageHeader, PrimaryButton, SecondaryButton, TextInput } from "@/components/ui";
 import { PaymentMethodsTab } from "./PaymentMethodsTab";
 
+const PAGE_SIZE = 10;
+
 export function AttributeCatalogsPage() {
   const [tab, setTab] = useState<"attributes" | "payment-methods">("attributes");
   const queryClient = useQueryClient();
-  const { data: catalogs = [], isLoading } = useQuery({
-    queryKey: ["attribute-catalogs"],
-    queryFn: fetchAttributeCatalogs,
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = useQuery({
+    queryKey: ["attribute-catalogs", { page }],
+    queryFn: () => fetchAttributeCatalogs({ page, pageSize: PAGE_SIZE }),
   });
+  const catalogs = data?.items ?? [];
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newCatalogName, setNewCatalogName] = useState("");
@@ -28,7 +32,10 @@ export function AttributeCatalogsPage() {
   const [managingCatalogId, setManagingCatalogId] = useState<string | null>(null);
   const [newValue, setNewValue] = useState("");
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["attribute-catalogs"] });
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["attribute-catalogs"] });
+    queryClient.invalidateQueries({ queryKey: ["attribute-catalogs-all"] });
+  };
 
   const createCatalogMutation = useMutation({
     mutationFn: ({ name, values }: { name: string; values: string[] }) => createAttributeCatalog(name, values),
@@ -159,14 +166,7 @@ export function AttributeCatalogsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Catálogos"
-        actions={
-          tab === "attributes" && (
-            <PrimaryButton onClick={() => setShowCreateForm(true)}>Nuevo catálogo</PrimaryButton>
-          )
-        }
-      />
+      <PageHeader title="Catálogos" />
 
       <div className="mb-4 flex gap-1 border-b border-line">
         {(["attributes", "payment-methods"] as const).map((value) => (
@@ -186,19 +186,25 @@ export function AttributeCatalogsPage() {
       {tab === "payment-methods" ? (
         <PaymentMethodsTab />
       ) : (
-        <Card>
-          {isLoading ? (
-            <p className="text-sm text-ink-soft">Cargando…</p>
-          ) : (
-            <DataTable
-              columns={columns}
-              rows={catalogs}
-              rowKey={(c) => c.id}
-              emptyMessage="Todavía no hay catálogos."
-              pagination={{ mode: "client", pageSize: 10 }}
-            />
-          )}
-        </Card>
+        <>
+          <div className="mb-4 flex justify-end">
+            <PrimaryButton onClick={() => setShowCreateForm(true)}>Nuevo catálogo</PrimaryButton>
+          </div>
+
+          <Card>
+            {isLoading ? (
+              <p className="text-sm text-ink-soft">Cargando…</p>
+            ) : (
+              <DataTable
+                columns={columns}
+                rows={catalogs}
+                rowKey={(c) => c.id}
+                emptyMessage="Todavía no hay catálogos."
+                pagination={{ mode: "server", page, pageSize: PAGE_SIZE, total: data?.total ?? 0, onPageChange: setPage }}
+              />
+            )}
+          </Card>
+        </>
       )}
 
       <Modal open={showCreateForm} onClose={closeCreateForm} title="Nuevo catálogo" width="max-w-md">

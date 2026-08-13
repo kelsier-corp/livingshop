@@ -6,6 +6,11 @@ export interface AttributeCatalog {
   values: AttributeCatalogValue[];
 }
 
+export interface AttributeCatalogListQuery {
+  page: number;
+  pageSize: number;
+}
+
 export interface AttributeCatalogValue {
   id: string;
   attributeCatalogId: string;
@@ -78,7 +83,7 @@ export interface ProductTypeListQuery {
   page: number;
   pageSize: number;
   search?: string;
-  categoryId?: string;
+  categoryIds?: string[];
 }
 
 export interface ProductCategoryListQuery {

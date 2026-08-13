@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchAttributeCatalogs } from "@/api/attributeCatalogs";
+import { fetchAllAttributeCatalogs } from "@/api/attributeCatalogs";
 import { OrderInput, createOrder } from "@/api/orders";
 import { fetchAllProductCategories } from "@/api/productCategories";
 import { fetchAllProductTypes } from "@/api/productTypes";
@@ -66,8 +66,8 @@ export function OrderFormPage() {
     queryFn: fetchAllProductCategories,
   });
   const { data: attributeCatalogs = [] } = useQuery({
-    queryKey: ["attribute-catalogs"],
-    queryFn: fetchAttributeCatalogs,
+    queryKey: ["attribute-catalogs-all"],
+    queryFn: fetchAllAttributeCatalogs,
   });
 
   const [customerId, setCustomerId] = useState("");

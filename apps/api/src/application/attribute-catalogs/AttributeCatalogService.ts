@@ -1,11 +1,16 @@
-import { AttributeCatalog, AttributeCatalogValue } from "@domain/entities/Catalog";
+import { AttributeCatalog, AttributeCatalogListQuery, AttributeCatalogValue } from "@domain/entities/Catalog";
 import { NotFoundError, ValidationError } from "@domain/errors/DomainError";
+import { PageResult } from "@domain/entities/Pagination";
 import { AttributeCatalogRepository } from "@domain/repositories/CatalogRepository";
 
 export class AttributeCatalogService {
   constructor(private readonly repository: AttributeCatalogRepository) {}
 
-  list(): Promise<AttributeCatalog[]> {
+  list(query: AttributeCatalogListQuery): Promise<PageResult<AttributeCatalog>> {
+    return this.repository.list(query);
+  }
+
+  listAll(): Promise<AttributeCatalog[]> {
     return this.repository.findAll();
   }
 

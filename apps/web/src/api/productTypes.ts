@@ -22,7 +22,7 @@ export interface ProductTypeListParams {
   page: number;
   pageSize: number;
   search?: string;
-  categoryId?: string;
+  categoryIds?: string[];
 }
 
 export function fetchProductTypes(params: ProductTypeListParams): Promise<PageResult<ProductType>> {

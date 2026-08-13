@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import {
   AttributeCatalog,
+  AttributeCatalogListQuery,
   AttributeCatalogValue,
   AttributeDefinition,
   ProductCategory,
@@ -34,7 +35,9 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
 
     const where: Prisma.ProductTypeWhereInput = {
       ...(matchingIds ? { id: { in: matchingIds } } : {}),
-      ...(query.categoryId ? { categories: { some: { id: query.categoryId } } } : {}),
+      ...(query.categoryIds && query.categoryIds.length > 0
+        ? { categories: { some: { id: { in: query.categoryIds } } } }
+        : {}),
     };
 
     const [rows, total] = await Promise.all([
@@ -219,6 +222,19 @@ export class PrismaProductCategoryRepository implements ProductCategoryRepositor
 
 export class PrismaAttributeCatalogRepository implements AttributeCatalogRepository {
   constructor(private readonly prisma: PrismaClient) {}
+
+  async list(query: AttributeCatalogListQuery): Promise<PageResult<AttributeCatalog>> {
+    const [rows, total] = await Promise.all([
+      this.prisma.attributeCatalog.findMany({
+        include: { values: { orderBy: { value: "asc" } } },
+        orderBy: { name: "asc" },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.attributeCatalog.count(),
+    ]);
+    return { items: rows.map(toCatalogDomain), total, page: query.page, pageSize: query.pageSize };
+  }
 
   async findAll(): Promise<AttributeCatalog[]> {
     const rows = await this.prisma.attributeCatalog.findMany({

@@ -10,7 +10,7 @@ import {
   updateProductType,
   uploadProductSketch,
 } from "@/api/productTypes";
-import { fetchAttributeCatalogs } from "@/api/attributeCatalogs";
+import { fetchAllAttributeCatalogs } from "@/api/attributeCatalogs";
 import { AttributeDataType, ProductType } from "@/api/types";
 import { AttributeCatalogSelect } from "@/components/AttributeCatalogSelect";
 import { CategoryFilterSelect } from "@/components/CategoryFilterSelect";
@@ -67,15 +67,20 @@ export function ProductTypesPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["product-types", { page, search: debouncedSearch, categoryFilter }],
     queryFn: () =>
-      fetchProductTypes({ page, pageSize: PAGE_SIZE, search: debouncedSearch || undefined, categoryId: categoryFilter || undefined }),
+      fetchProductTypes({
+        page,
+        pageSize: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+        categoryIds: categoryFilter ? [categoryFilter] : undefined,
+      }),
   });
   const { data: categories = [] } = useQuery({
     queryKey: ["product-categories-all"],
     queryFn: fetchAllProductCategories,
   });
   const { data: attributeCatalogs = [] } = useQuery({
-    queryKey: ["attribute-catalogs"],
-    queryFn: fetchAttributeCatalogs,
+    queryKey: ["attribute-catalogs-all"],
+    queryFn: fetchAllAttributeCatalogs,
   });
 
   const [showForm, setShowForm] = useState(false);

@@ -23,7 +23,11 @@ export const productTypeListQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(100).default(20),
   search: z.string().trim().optional(),
-  categoryId: z.string().uuid().optional(),
+  categoryIds: z
+    .string()
+    .optional()
+    .transform((value) => (value ? value.split(",") : undefined))
+    .pipe(z.array(z.string().uuid()).optional()),
 });
 
 export const productCategoryListQuerySchema = z.object({
@@ -49,6 +53,11 @@ export const percentagePriceIncreaseInputSchema = z.object({
 
 export const productCategoryInputSchema = z.object({
   name: z.string().trim().min(1),
+});
+
+export const attributeCatalogListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(20),
 });
 
 export const attributeCatalogCreateSchema = z.object({
