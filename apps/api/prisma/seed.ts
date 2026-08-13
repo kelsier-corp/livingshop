@@ -124,7 +124,7 @@ async function main() {
           { name: "Medida", dataType: "text", sortOrder: 0, required: true },
           { name: "Patas", dataType: "catalog", attributeCatalogId: legsColorCatalog.id, sortOrder: 1 },
           { name: "Tela", dataType: "catalog", attributeCatalogId: fabricCatalog.id, sortOrder: 2, required: true },
-          { name: "Color de tachas", dataType: "color", sortOrder: 3 },
+          { name: "Color de tachas", dataType: "text", sortOrder: 3 },
         ],
       },
     },

@@ -19,7 +19,7 @@ export interface Customer {
   createdAt: string;
 }
 
-export type AttributeDataType = "text" | "number" | "catalog" | "color";
+export type AttributeDataType = "text" | "catalog";
 
 export interface AttributeDefinition {
   id: string;

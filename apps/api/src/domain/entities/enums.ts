@@ -1,7 +1,7 @@
 export const USER_ROLES = ["admin", "sales", "factory"] as const;
 export type UserRole = (typeof USER_ROLES)[number];
 
-export const ATTRIBUTE_DATA_TYPES = ["text", "number", "catalog", "color"] as const;
+export const ATTRIBUTE_DATA_TYPES = ["text", "catalog"] as const;
 export type AttributeDataType = (typeof ATTRIBUTE_DATA_TYPES)[number];
 
 export const ORDER_STATUSES = [

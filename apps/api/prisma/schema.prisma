@@ -15,9 +15,7 @@ enum UserRole {
 
 enum AttributeDataType {
   text
-  number
   catalog
-  color
 }
 
 enum OrderStatus {

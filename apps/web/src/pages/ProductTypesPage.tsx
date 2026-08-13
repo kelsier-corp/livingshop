@@ -32,12 +32,10 @@ import { respectsMinimum } from "@/utils/number";
 import { ProductCategoriesTab } from "./ProductCategoriesTab";
 
 const PAGE_SIZE = 10;
-const DATA_TYPES: AttributeDataType[] = ["text", "number", "catalog", "color"];
+const DATA_TYPES: AttributeDataType[] = ["text", "catalog"];
 const DATA_TYPE_LABEL: Record<AttributeDataType, string> = {
   text: "Texto",
-  number: "Número",
   catalog: "Catálogo",
-  color: "Color",
 };
 
 function emptyForm(): ProductTypeInput {
