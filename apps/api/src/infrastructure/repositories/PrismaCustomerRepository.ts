@@ -2,22 +2,21 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { Customer, CustomerInput, CustomerListQuery } from "@domain/entities/Customer";
 import { PageResult } from "@domain/entities/Pagination";
 import { CustomerRepository } from "@domain/repositories/CustomerRepository";
+import { findIdsByUnaccentedSearch } from "./accentInsensitiveSearch";
 
 export class PrismaCustomerRepository implements CustomerRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async list(query: CustomerListQuery): Promise<PageResult<Customer>> {
-    const where: Prisma.CustomerWhereInput = query.search
-      ? {
-          OR: [
-            { firstName: { contains: query.search, mode: "insensitive" } },
-            { lastName: { contains: query.search, mode: "insensitive" } },
-            { email: { contains: query.search, mode: "insensitive" } },
-            { mobilePhone: { contains: query.search, mode: "insensitive" } },
-            { phone: { contains: query.search, mode: "insensitive" } },
-          ],
-        }
-      : {};
+    const matchingIds = query.search
+      ? await findIdsByUnaccentedSearch(
+          this.prisma,
+          "customers",
+          ["firstName", "lastName", "email", "mobilePhone", "phone"],
+          query.search
+        )
+      : null;
+    const where: Prisma.CustomerWhereInput = matchingIds ? { id: { in: matchingIds } } : {};
 
     const [rows, total] = await Promise.all([
       this.prisma.customer.findMany({
