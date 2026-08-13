@@ -29,13 +29,14 @@ export function CategoryFilterSelect({ categories, selectedId, onChange, topN = 
     onChange(id);
     setQuery("");
     setOpen(false);
+    (document.activeElement as HTMLElement | null)?.blur();
   }
 
   return (
     <div className="relative">
       <TextInput
-        placeholder={selected ? selected.name : "Todas las categorías"}
-        value={open ? query : ""}
+        placeholder="Todas las categorías"
+        value={open ? query : (selected?.name ?? "")}
         onFocus={() => {
           setOpen(true);
           setQuery("");
