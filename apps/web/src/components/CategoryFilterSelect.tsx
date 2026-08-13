@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ProductCategory } from "@/api/types";
+import { normalizeForSearch } from "@/utils/text";
 import { TextInput } from "./ui";
 
 interface Props {
@@ -19,10 +20,10 @@ export function CategoryFilterSelect({ categories, selectedId, onChange, topN = 
   const [open, setOpen] = useState(false);
 
   const selected = categories.find((category) => category.id === selectedId);
-  const term = query.trim().toLowerCase();
+  const term = normalizeForSearch(query.trim());
   const candidates = term
     ? categories
-        .filter((category) => category.name.toLowerCase().includes(term))
+        .filter((category) => normalizeForSearch(category.name).includes(term))
         .slice(0, VISIBLE_LIMIT)
     : [...categories].sort((a, b) => b.productCount - a.productCount).slice(0, topN);
 
@@ -30,13 +31,14 @@ export function CategoryFilterSelect({ categories, selectedId, onChange, topN = 
     onChange(id);
     setQuery("");
     setOpen(false);
+    (document.activeElement as HTMLElement | null)?.blur();
   }
 
   return (
     <div className="relative">
       <TextInput
-        placeholder={selected ? selected.name : "Todas las categorías"}
-        value={open ? query : ""}
+        placeholder="Todas las categorías"
+        value={open ? query : (selected?.name ?? "")}
         onFocus={() => {
           setOpen(true);
           setQuery("");

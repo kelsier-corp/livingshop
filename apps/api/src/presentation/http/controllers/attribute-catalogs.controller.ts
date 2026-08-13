@@ -2,7 +2,9 @@ import { Request, Response } from "express";
 import { AttributeCatalogService } from "@application/attribute-catalogs/AttributeCatalogService";
 import { param } from "../utils/param";
 import {
-  attributeCatalogInputSchema,
+  attributeCatalogCreateSchema,
+  attributeCatalogListQuerySchema,
+  attributeCatalogUpdateSchema,
   attributeCatalogValueInputSchema,
   attributeCatalogValueUpdateSchema,
 } from "../validators/catalog.validators";
@@ -10,8 +12,13 @@ import {
 export class AttributeCatalogsController {
   constructor(private readonly attributeCatalogService: AttributeCatalogService) {}
 
-  list = async (_req: Request, res: Response): Promise<void> => {
-    res.json(await this.attributeCatalogService.list());
+  list = async (req: Request, res: Response): Promise<void> => {
+    const query = attributeCatalogListQuerySchema.parse(req.query);
+    res.json(await this.attributeCatalogService.list(query));
+  };
+
+  listAll = async (_req: Request, res: Response): Promise<void> => {
+    res.json(await this.attributeCatalogService.listAll());
   };
 
   getById = async (req: Request, res: Response): Promise<void> => {
@@ -19,12 +26,12 @@ export class AttributeCatalogsController {
   };
 
   create = async (req: Request, res: Response): Promise<void> => {
-    const { name } = attributeCatalogInputSchema.parse(req.body);
-    res.status(201).json(await this.attributeCatalogService.create(name));
+    const { name, values } = attributeCatalogCreateSchema.parse(req.body);
+    res.status(201).json(await this.attributeCatalogService.create(name, values));
   };
 
   update = async (req: Request, res: Response): Promise<void> => {
-    const { name } = attributeCatalogInputSchema.parse(req.body);
+    const { name } = attributeCatalogUpdateSchema.parse(req.body);
     res.json(await this.attributeCatalogService.update(param(req, "id"), name));
   };
 

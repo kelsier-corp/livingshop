@@ -15,9 +15,7 @@ enum UserRole {
 
 enum AttributeDataType {
   text
-  number
   catalog
-  color
 }
 
 enum OrderStatus {
@@ -83,14 +81,15 @@ model ProductCategory {
 }
 
 model ProductType {
-  id             String  @id @default(uuid())
-  name           String  @unique
-  description    String?
-  basePrice      Decimal @default(0) @db.Decimal(12, 2)
-  active         Boolean @default(true)
-  sketchUrl      String?
-  sketchFileName String?
-  categories     ProductCategory[]
+  id                    String  @id @default(uuid())
+  name                  String  @unique
+  description           String?
+  basePrice             Decimal @default(0) @db.Decimal(12, 2)
+  active                Boolean @default(true)
+  sketchUrl             String?
+  sketchFileName        String?
+  includeInFactorySheet Boolean @default(true)
+  categories            ProductCategory[]
 
   attributeDefinitions AttributeDefinition[]
   orderItems           OrderItem[]
@@ -211,4 +210,16 @@ model Payment {
   note      String?
 
   @@map("payments")
+}
+
+// The method a payment used is snapshotted onto Payment.method as a plain string at the moment
+// it's recorded (same pattern as OrderItem's price snapshot) — this catalog just powers the
+// admin-editable list of options offered when adding a new payment. Renaming or deactivating a
+// method here never touches historical Payment rows.
+model PaymentMethod {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  active Boolean @default(true)
+
+  @@map("payment_methods")
 }

@@ -67,8 +67,14 @@ describe("ProductTypeService", () => {
       );
     });
 
-    it("accepts a basePrice of exactly 0", async () => {
-      await expect(service.create(buildInput({ basePrice: 0 }))).resolves.toBeDefined();
+    it("rejects a basePrice of exactly 0", async () => {
+      await expect(async () => service.create(buildInput({ basePrice: 0 }))).rejects.toThrow(
+        ValidationError
+      );
+    });
+
+    it("accepts a basePrice greater than 0", async () => {
+      await expect(service.create(buildInput({ basePrice: 0.01 }))).resolves.toBeDefined();
     });
 
     it("rejects an attribute definition without a name", async () => {

@@ -68,9 +68,14 @@ export function pdfUrl(path: string): string {
 export function toQueryString(params: object): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(
-    params as Record<string, string | number | undefined>
+    params as Record<string, string | number | string[] | undefined>
   )) {
-    if (value !== undefined && value !== "") search.set(key, String(value));
+    if (value === undefined || value === "") continue;
+    if (Array.isArray(value)) {
+      if (value.length > 0) search.set(key, value.join(","));
+    } else {
+      search.set(key, String(value));
+    }
   }
   const query = search.toString();
   return query ? `?${query}` : "";

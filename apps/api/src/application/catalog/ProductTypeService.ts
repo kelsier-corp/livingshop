@@ -48,7 +48,7 @@ export class ProductTypeService {
 
   bulkUpdatePrices(prices: ProductTypePriceInput[]): Promise<ProductType[]> {
     for (const price of prices) {
-      if (price.basePrice < 0) throw new ValidationError("basePrice cannot be negative");
+      if (price.basePrice <= 0) throw new ValidationError("basePrice must be greater than 0");
     }
     return this.productTypeRepository.bulkUpdatePrices(prices);
   }
@@ -80,7 +80,7 @@ export class ProductTypeService {
 
   private assertValid(input: ProductTypeInput): void {
     if (!input.name.trim()) throw new ValidationError("name is required");
-    if (input.basePrice < 0) throw new ValidationError("basePrice cannot be negative");
+    if (input.basePrice <= 0) throw new ValidationError("basePrice must be greater than 0");
     for (const attribute of input.attributeDefinitions) {
       if (!attribute.name.trim()) {
         throw new ValidationError("Every attribute definition needs a name");

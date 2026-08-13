@@ -25,6 +25,7 @@ function buildItem(unitPrice: number, quantity: number) {
     orderId: "order-1",
     productTypeId: "product-1",
     productTypeSketchUrl: null,
+    productTypeIncludeInFactorySheet: true,
     quantity,
     unitPrice,
     totalPrice: unitPrice * quantity,

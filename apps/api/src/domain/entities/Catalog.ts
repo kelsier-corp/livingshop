@@ -6,6 +6,11 @@ export interface AttributeCatalog {
   values: AttributeCatalogValue[];
 }
 
+export interface AttributeCatalogListQuery {
+  page: number;
+  pageSize: number;
+}
+
 export interface AttributeCatalogValue {
   id: string;
   attributeCatalogId: string;
@@ -30,6 +35,7 @@ export interface ProductType {
   active: boolean;
   sketchUrl: string | null;
   sketchFileName: string | null;
+  includeInFactorySheet: boolean;
   categories: ProductCategoryRef[];
   attributeDefinitions: AttributeDefinition[];
 }
@@ -69,6 +75,7 @@ export interface ProductTypeInput {
   basePrice: number;
   categoryIds: string[];
   active?: boolean;
+  includeInFactorySheet?: boolean;
   attributeDefinitions: AttributeDefinitionInput[];
 }
 
@@ -76,7 +83,7 @@ export interface ProductTypeListQuery {
   page: number;
   pageSize: number;
   search?: string;
-  categoryId?: string;
+  categoryIds?: string[];
 }
 
 export interface ProductCategoryListQuery {

@@ -10,6 +10,7 @@ import {
   updateOrderStatus,
   uploadAttachment,
 } from "@/api/orders";
+import { fetchPaymentMethods } from "@/api/paymentMethods";
 import { OrderStatus } from "@/api/types";
 import { Collapsible } from "@/components/Collapsible";
 import { ORDER_STATUS_LABEL, OrderStatusBadge } from "@/components/OrderStatusBadge";
@@ -23,7 +24,7 @@ import {
   SecondaryButton,
   TextInput,
 } from "@/components/ui";
-import { respectsMinimum } from "@/utils/number";
+import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 const STATUSES: OrderStatus[] = ["draft", "confirmed", "in_production", "delivered", "cancelled"];
 
@@ -66,7 +67,12 @@ export function OrderDetailPage() {
     queryFn: () => fetchCustomer(order!.customerId),
     enabled: !!order,
   });
-  const [paymentForm, setPaymentForm] = useState({ amount: "", method: "efectivo", note: "" });
+  const { data: paymentMethods = [] } = useQuery({
+    queryKey: ["payment-methods"],
+    queryFn: fetchPaymentMethods,
+  });
+  const activeMethods = paymentMethods.filter((m) => m.active);
+  const [paymentForm, setPaymentForm] = useState({ amount: "", method: "", note: "" });
   const [pendingPreview, setPendingPreview] = useState<{ itemId: string; url: string } | null>(
     null
   );
@@ -82,12 +88,12 @@ export function OrderDetailPage() {
     mutationFn: () =>
       addPayment(id!, {
         amount: Number(paymentForm.amount),
-        method: paymentForm.method,
+        method: paymentForm.method || activeMethods[0]?.name || "",
         note: paymentForm.note || null,
       }),
     onSuccess: () => {
       invalidate();
-      setPaymentForm({ amount: "", method: "efectivo", note: "" });
+      setPaymentForm({ amount: "", method: "", note: "" });
     },
   });
 
@@ -351,24 +357,25 @@ export function OrderDetailPage() {
 
           <form onSubmit={handlePaymentSubmit} className="grid grid-cols-4 gap-2">
             <TextInput
-              type="number"
-              min={0}
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               placeholder="Monto"
               value={paymentForm.amount}
               onChange={(e) => {
-                if (respectsMinimum(e.target.value))
+                if (isNumericInput(e.target.value) && respectsMinimum(e.target.value)) {
                   setPaymentForm({ ...paymentForm, amount: e.target.value });
+                }
               }}
             />
             <Select
-              value={paymentForm.method}
+              value={paymentForm.method || activeMethods[0]?.name || ""}
               onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value })}
             >
-              <option value="efectivo">Efectivo</option>
-              <option value="debito">Débito</option>
-              <option value="credito">Crédito</option>
-              <option value="transferencia">Transferencia</option>
+              {activeMethods.map((method) => (
+                <option key={method.id} value={method.name}>
+                  {method.name}
+                </option>
+              ))}
             </Select>
             <TextInput
               placeholder="Comentario (opcional)"

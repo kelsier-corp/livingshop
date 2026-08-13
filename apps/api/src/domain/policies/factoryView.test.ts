@@ -8,6 +8,7 @@ function buildItem(overrides: Partial<OrderItem> = {}): OrderItem {
     orderId: "order-1",
     productTypeId: "product-1",
     productTypeSketchUrl: null,
+    productTypeIncludeInFactorySheet: true,
     quantity: 1,
     unitPrice: 1000,
     totalPrice: 1000,

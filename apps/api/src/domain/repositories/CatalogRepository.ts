@@ -1,5 +1,6 @@
 import {
   AttributeCatalog,
+  AttributeCatalogListQuery,
   AttributeCatalogValue,
   ProductCategory,
   ProductCategoryListQuery,
@@ -32,12 +33,14 @@ export interface ProductCategoryRepository {
 }
 
 export interface AttributeCatalogRepository {
+  list(query: AttributeCatalogListQuery): Promise<PageResult<AttributeCatalog>>;
   findAll(): Promise<AttributeCatalog[]>;
   findById(id: string): Promise<AttributeCatalog | null>;
-  create(name: string): Promise<AttributeCatalog>;
+  create(name: string, values: string[]): Promise<AttributeCatalog>;
   update(id: string, name: string): Promise<AttributeCatalog>;
   delete(id: string): Promise<void>;
   addValue(attributeCatalogId: string, value: string): Promise<AttributeCatalogValue>;
+  findValueById(id: string): Promise<AttributeCatalogValue | null>;
   updateValue(id: string, value: string, active: boolean): Promise<AttributeCatalogValue>;
   deleteValue(id: string): Promise<void>;
 }

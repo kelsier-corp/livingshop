@@ -8,6 +8,7 @@ export interface ProductTypeInput {
   basePrice: number;
   categoryIds: string[];
   active?: boolean;
+  includeInFactorySheet?: boolean;
   attributeDefinitions: AttributeDefinitionInput[];
 }
 
@@ -21,7 +22,7 @@ export interface ProductTypeListParams {
   page: number;
   pageSize: number;
   search?: string;
-  categoryId?: string;
+  categoryIds?: string[];
 }
 
 export function fetchProductTypes(params: ProductTypeListParams): Promise<PageResult<ProductType>> {

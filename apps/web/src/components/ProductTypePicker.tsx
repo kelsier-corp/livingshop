@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ProductCategory, ProductType } from "@/api/types";
+import { normalizeForSearch } from "@/utils/text";
 import { SecondaryButton, TextInput } from "./ui";
 
 function formatCurrency(value: number): string {
@@ -29,11 +30,11 @@ export function ProductTypePicker({
   const selected = productTypes.find((productType) => productType.id === selectedProductTypeId);
 
   const matches = useMemo(() => {
-    const term = query.trim().toLowerCase();
+    const term = normalizeForSearch(query.trim());
     return productTypes.filter((productType) => {
       const matchesCategory =
         !categoryId || productType.categories.some((category) => category.id === categoryId);
-      const matchesTerm = !term || productType.name.toLowerCase().includes(term);
+      const matchesTerm = !term || normalizeForSearch(productType.name).includes(term);
       return matchesCategory && matchesTerm;
     });
   }, [productTypes, query, categoryId]);

@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchAttributeCatalogs } from "@/api/attributeCatalogs";
+import { fetchAllAttributeCatalogs } from "@/api/attributeCatalogs";
 import { OrderInput, createOrder } from "@/api/orders";
 import { fetchAllProductCategories } from "@/api/productCategories";
 import { fetchAllProductTypes } from "@/api/productTypes";
@@ -20,7 +20,7 @@ import {
   TextArea,
   TextInput,
 } from "@/components/ui";
-import { respectsMinimum } from "@/utils/number";
+import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 interface CustomAttribute {
   key: string;
@@ -81,8 +81,8 @@ export function OrderFormPage() {
     queryFn: fetchAllProductCategories,
   });
   const { data: attributeCatalogs = [] } = useQuery({
-    queryKey: ["attribute-catalogs"],
-    queryFn: fetchAttributeCatalogs,
+    queryKey: ["attribute-catalogs-all"],
+    queryFn: fetchAllAttributeCatalogs,
   });
 
   const [customerId, setCustomerId] = useState("");
@@ -233,13 +233,17 @@ export function OrderFormPage() {
                   <div>
                     <FieldLabel>Cantidad</FieldLabel>
                     <TextInput
-                      type="number"
-                      min={1}
+                      type="text"
+                      inputMode="numeric"
                       required
                       value={item.quantity}
                       onChange={(e) => {
-                        if (respectsMinimum(e.target.value, 1))
+                        if (
+                          isNumericInput(e.target.value, { allowDecimal: false }) &&
+                          respectsMinimum(e.target.value, 1)
+                        ) {
                           updateItem(index, { quantity: Number(e.target.value) });
+                        }
                       }}
                     />
                   </div>

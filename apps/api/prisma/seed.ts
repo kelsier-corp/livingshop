@@ -31,6 +31,10 @@ async function main() {
     create: { name: "David Gomez", email: "factory@livingshop.test", role: "factory" },
   });
 
+  for (const name of ["Efectivo", "Débito", "Crédito", "Transferencia"]) {
+    await prisma.paymentMethod.upsert({ where: { name }, update: {}, create: { name } });
+  }
+
   const fabricCatalog = await prisma.attributeCatalog.upsert({
     where: { name: "Tela" },
     update: {},
@@ -149,7 +153,7 @@ async function main() {
             sortOrder: 2,
             required: true,
           },
-          { name: "Color de tachas", dataType: "color", sortOrder: 3 },
+          { name: "Color de tachas", dataType: "text", sortOrder: 3 },
         ],
       },
     },

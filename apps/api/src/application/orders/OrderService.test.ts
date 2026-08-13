@@ -39,6 +39,7 @@ function buildProductType(overrides: Partial<ProductType> = {}): ProductType {
     active: true,
     sketchUrl: null,
     sketchFileName: null,
+    includeInFactorySheet: true,
     categories: [],
     attributeDefinitions: [],
     ...overrides,

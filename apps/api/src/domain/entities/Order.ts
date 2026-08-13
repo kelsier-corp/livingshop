@@ -25,6 +25,7 @@ export interface OrderItem {
   productTypeId: string;
   productTypeName?: string;
   productTypeSketchUrl: string | null;
+  productTypeIncludeInFactorySheet: boolean;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -58,6 +59,12 @@ export interface PaymentInput {
   method: string;
   feePct?: number | null;
   note?: string | null;
+}
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  active: boolean;
 }
 
 export interface Order {

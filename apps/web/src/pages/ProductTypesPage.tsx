@@ -10,8 +10,9 @@ import {
   updateProductType,
   uploadProductSketch,
 } from "@/api/productTypes";
-import { fetchAttributeCatalogs } from "@/api/attributeCatalogs";
+import { fetchAllAttributeCatalogs } from "@/api/attributeCatalogs";
 import { AttributeDataType, ProductType } from "@/api/types";
+import { AttributeCatalogSelect } from "@/components/AttributeCatalogSelect";
 import { CategoryFilterSelect } from "@/components/CategoryFilterSelect";
 import { CategorySelector } from "@/components/CategorySelector";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
@@ -28,16 +29,14 @@ import {
   TextInput,
 } from "@/components/ui";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { respectsMinimum } from "@/utils/number";
+import { isNumericInput, respectsMinimum } from "@/utils/number";
 import { ProductCategoriesTab } from "./ProductCategoriesTab";
 
 const PAGE_SIZE = 10;
-const DATA_TYPES: AttributeDataType[] = ["text", "number", "catalog", "color"];
+const DATA_TYPES: AttributeDataType[] = ["text", "catalog"];
 const DATA_TYPE_LABEL: Record<AttributeDataType, string> = {
   text: "Texto",
-  number: "Número",
   catalog: "Catálogo",
-  color: "Color",
 };
 
 function emptyForm(): ProductTypeInput {
@@ -47,6 +46,7 @@ function emptyForm(): ProductTypeInput {
     basePrice: 0,
     categoryIds: [],
     active: true,
+    includeInFactorySheet: true,
     attributeDefinitions: [],
   };
 }
@@ -75,7 +75,7 @@ export function ProductTypesPage() {
         page,
         pageSize: PAGE_SIZE,
         search: debouncedSearch || undefined,
-        categoryId: categoryFilter || undefined,
+        categoryIds: categoryFilter ? [categoryFilter] : undefined,
       }),
   });
   const { data: categories = [] } = useQuery({
@@ -83,8 +83,8 @@ export function ProductTypesPage() {
     queryFn: fetchAllProductCategories,
   });
   const { data: attributeCatalogs = [] } = useQuery({
-    queryKey: ["attribute-catalogs"],
-    queryFn: fetchAttributeCatalogs,
+    queryKey: ["attribute-catalogs-all"],
+    queryFn: fetchAllAttributeCatalogs,
   });
 
   const [showForm, setShowForm] = useState(false);
@@ -154,6 +154,7 @@ export function ProductTypesPage() {
       basePrice: productType.basePrice,
       categoryIds: productType.categories.map((category) => category.id),
       active: productType.active,
+      includeInFactorySheet: productType.includeInFactorySheet,
       attributeDefinitions: productType.attributeDefinitions.map((attribute) => ({
         name: attribute.name,
         dataType: attribute.dataType,
@@ -359,16 +360,19 @@ export function ProductTypesPage() {
             <div>
               <FieldLabel>Precio</FieldLabel>
               <TextInput
-                type="number"
-                min={0}
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 required
                 value={form.basePrice}
                 onChange={(e) => {
-                  if (respectsMinimum(e.target.value))
+                  if (isNumericInput(e.target.value) && respectsMinimum(e.target.value)) {
                     setForm({ ...form, basePrice: Number(e.target.value) });
+                  }
                 }}
               />
+              {form.basePrice <= 0 && (
+                <p className="mt-1 text-xs text-signal">El precio debe ser mayor a 0.</p>
+              )}
             </div>
             <div className="col-span-2">
               <FieldLabel>Descripción</FieldLabel>
@@ -384,6 +388,20 @@ export function ProductTypesPage() {
                 selectedIds={form.categoryIds}
                 onChange={(categoryIds) => setForm({ ...form, categoryIds })}
               />
+            </div>
+            <div className="col-span-2">
+              <label className="flex items-center gap-2 text-sm text-ink-soft">
+                <input
+                  type="checkbox"
+                  checked={form.includeInFactorySheet ?? true}
+                  onChange={(e) => setForm({ ...form, includeInFactorySheet: e.target.checked })}
+                />
+                Incluir en la ficha técnica de fábrica
+              </label>
+              <p className="mt-1 text-xs text-ink-soft/70">
+                Desmarcá esto para productos sin trabajo de fábrica (ej. flete, instalación) — no
+                van a aparecer en la ficha técnica de ninguna orden que los incluya.
+              </p>
             </div>
             <div className="col-span-2">
               <FieldLabel>Croquis</FieldLabel>
@@ -470,19 +488,11 @@ export function ProductTypesPage() {
                   </div>
                   <div className="col-span-3">
                     {attribute.dataType === "catalog" ? (
-                      <Select
-                        value={attribute.attributeCatalogId ?? ""}
-                        onChange={(e) =>
-                          updateAttributeRow(index, { attributeCatalogId: e.target.value })
-                        }
-                      >
-                        <option value="">Elegir catálogo…</option>
-                        {attributeCatalogs.map((catalog) => (
-                          <option key={catalog.id} value={catalog.id}>
-                            {catalog.name}
-                          </option>
-                        ))}
-                      </Select>
+                      <AttributeCatalogSelect
+                        catalogs={attributeCatalogs}
+                        selectedId={attribute.attributeCatalogId}
+                        onChange={(id) => updateAttributeRow(index, { attributeCatalogId: id })}
+                      />
                     ) : (
                       <span className="text-xs text-ink-soft">Texto libre en la orden</span>
                     )}
@@ -517,7 +527,7 @@ export function ProductTypesPage() {
           <div className="flex gap-2">
             <PrimaryButton
               type="submit"
-              disabled={createMutation.isPending || updateMutation.isPending}
+              disabled={createMutation.isPending || updateMutation.isPending || form.basePrice <= 0}
             >
               {editingId ? "Guardar cambios" : "Crear producto"}
             </PrimaryButton>
