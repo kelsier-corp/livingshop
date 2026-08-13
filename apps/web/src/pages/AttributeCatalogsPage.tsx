@@ -24,16 +24,18 @@ export function AttributeCatalogsPage() {
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newCatalogName, setNewCatalogName] = useState("");
+  const [newCatalogValues, setNewCatalogValues] = useState<string[]>([""]);
   const [managingCatalogId, setManagingCatalogId] = useState<string | null>(null);
   const [newValue, setNewValue] = useState("");
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["attribute-catalogs"] });
 
   const createCatalogMutation = useMutation({
-    mutationFn: createAttributeCatalog,
+    mutationFn: ({ name, values }: { name: string; values: string[] }) => createAttributeCatalog(name, values),
     onSuccess: () => {
       invalidate();
       setNewCatalogName("");
+      setNewCatalogValues([""]);
       setShowCreateForm(false);
     },
   });
@@ -57,9 +59,31 @@ export function AttributeCatalogsPage() {
     onSuccess: invalidate,
   });
 
+  const validNewCatalogValues = newCatalogValues.map((value) => value.trim()).filter((value) => value.length > 0);
+
   function handleCreateCatalog(e: FormEvent) {
     e.preventDefault();
-    if (newCatalogName.trim()) createCatalogMutation.mutate(newCatalogName.trim());
+    if (newCatalogName.trim() && validNewCatalogValues.length > 0) {
+      createCatalogMutation.mutate({ name: newCatalogName.trim(), values: validNewCatalogValues });
+    }
+  }
+
+  function updateNewCatalogValue(index: number, value: string) {
+    setNewCatalogValues(newCatalogValues.map((v, i) => (i === index ? value : v)));
+  }
+
+  function addNewCatalogValueRow() {
+    setNewCatalogValues([...newCatalogValues, ""]);
+  }
+
+  function removeNewCatalogValueRow(index: number) {
+    setNewCatalogValues(newCatalogValues.length > 1 ? newCatalogValues.filter((_, i) => i !== index) : [""]);
+  }
+
+  function closeCreateForm() {
+    setShowCreateForm(false);
+    setNewCatalogName("");
+    setNewCatalogValues([""]);
   }
 
   function handleAddValue(e: FormEvent) {
@@ -172,7 +196,7 @@ export function AttributeCatalogsPage() {
         </Card>
       )}
 
-      <Modal open={showCreateForm} onClose={() => setShowCreateForm(false)} title="Nuevo catálogo" width="max-w-md">
+      <Modal open={showCreateForm} onClose={closeCreateForm} title="Nuevo catálogo" width="max-w-md">
         <form onSubmit={handleCreateCatalog} className="space-y-4">
           <div>
             <FieldLabel>Nombre</FieldLabel>
@@ -183,11 +207,43 @@ export function AttributeCatalogsPage() {
               onChange={(e) => setNewCatalogName(e.target.value)}
             />
           </div>
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <FieldLabel className="mb-0">Valores</FieldLabel>
+              <SecondaryButton type="button" onClick={addNewCatalogValueRow}>
+                Agregar valor
+              </SecondaryButton>
+            </div>
+            <div className="space-y-2">
+              {newCatalogValues.map((value, index) => (
+                <div key={index} className="flex gap-2">
+                  <TextInput
+                    placeholder="ej. Azul"
+                    value={value}
+                    onChange={(e) => updateNewCatalogValue(index, e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="text-xs text-signal hover:underline"
+                    onClick={() => removeNewCatalogValueRow(index)}
+                  >
+                    quitar
+                  </button>
+                </div>
+              ))}
+            </div>
+            {validNewCatalogValues.length === 0 && (
+              <p className="mt-1 text-xs text-signal">Cargá al menos un valor.</p>
+            )}
+          </div>
           <div className="flex gap-2">
-            <PrimaryButton type="submit" disabled={createCatalogMutation.isPending}>
+            <PrimaryButton
+              type="submit"
+              disabled={createCatalogMutation.isPending || validNewCatalogValues.length === 0}
+            >
               Crear catálogo
             </PrimaryButton>
-            <SecondaryButton type="button" onClick={() => setShowCreateForm(false)}>
+            <SecondaryButton type="button" onClick={closeCreateForm}>
               Cancelar
             </SecondaryButton>
           </div>

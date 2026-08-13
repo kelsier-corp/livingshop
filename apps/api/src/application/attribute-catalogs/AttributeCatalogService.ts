@@ -15,9 +15,11 @@ export class AttributeCatalogService {
     return catalog;
   }
 
-  create(name: string): Promise<AttributeCatalog> {
+  create(name: string, values: string[]): Promise<AttributeCatalog> {
     if (!name.trim()) throw new ValidationError("name is required");
-    return this.repository.create(name);
+    const trimmedValues = values.map((value) => value.trim()).filter((value) => value.length > 0);
+    if (trimmedValues.length === 0) throw new ValidationError("At least one value is required");
+    return this.repository.create(name, trimmedValues);
   }
 
   async update(id: string, name: string): Promise<AttributeCatalog> {

@@ -5,8 +5,8 @@ export function fetchAttributeCatalogs(): Promise<AttributeCatalog[]> {
   return apiGet<AttributeCatalog[]>("/attribute-catalogs");
 }
 
-export function createAttributeCatalog(name: string): Promise<AttributeCatalog> {
-  return apiPost<AttributeCatalog>("/attribute-catalogs", { name });
+export function createAttributeCatalog(name: string, values: string[]): Promise<AttributeCatalog> {
+  return apiPost<AttributeCatalog>("/attribute-catalogs", { name, values });
 }
 
 export function deleteAttributeCatalog(id: string): Promise<void> {

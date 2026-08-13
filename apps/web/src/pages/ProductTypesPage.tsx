@@ -29,7 +29,7 @@ import {
   TextInput,
 } from "@/components/ui";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { respectsMinimum } from "@/utils/number";
+import { isNumericInput, respectsMinimum } from "@/utils/number";
 import { ProductCategoriesTab } from "./ProductCategoriesTab";
 
 const PAGE_SIZE = 10;
@@ -293,15 +293,17 @@ export function ProductTypesPage() {
             <div>
               <FieldLabel>Precio</FieldLabel>
               <TextInput
-                type="number"
-                min={0}
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 required
                 value={form.basePrice}
                 onChange={(e) => {
-                  if (respectsMinimum(e.target.value)) setForm({ ...form, basePrice: Number(e.target.value) });
+                  if (isNumericInput(e.target.value) && respectsMinimum(e.target.value)) {
+                    setForm({ ...form, basePrice: Number(e.target.value) });
+                  }
                 }}
               />
+              {form.basePrice <= 0 && <p className="mt-1 text-xs text-signal">El precio debe ser mayor a 0.</p>}
             </div>
             <div className="col-span-2">
               <FieldLabel>Descripción</FieldLabel>
@@ -446,7 +448,10 @@ export function ProductTypesPage() {
           </div>
 
           <div className="flex gap-2">
-            <PrimaryButton type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+            <PrimaryButton
+              type="submit"
+              disabled={createMutation.isPending || updateMutation.isPending || form.basePrice <= 0}
+            >
               {editingId ? "Guardar cambios" : "Crear producto"}
             </PrimaryButton>
             <SecondaryButton type="button" onClick={closeForm}>

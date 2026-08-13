@@ -12,7 +12,7 @@ import { Collapsible } from "@/components/Collapsible";
 import { CustomerPicker } from "@/components/CustomerPicker";
 import { ProductTypePicker } from "@/components/ProductTypePicker";
 import { Card, FieldLabel, PageHeader, PrimaryButton, SecondaryButton, TextArea, TextInput } from "@/components/ui";
-import { respectsMinimum } from "@/utils/number";
+import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 interface CustomAttribute {
   key: string;
@@ -208,12 +208,14 @@ export function OrderFormPage() {
                   <div>
                     <FieldLabel>Cantidad</FieldLabel>
                     <TextInput
-                      type="number"
-                      min={1}
+                      type="text"
+                      inputMode="numeric"
                       required
                       value={item.quantity}
                       onChange={(e) => {
-                        if (respectsMinimum(e.target.value, 1)) updateItem(index, { quantity: Number(e.target.value) });
+                        if (isNumericInput(e.target.value, { allowDecimal: false }) && respectsMinimum(e.target.value, 1)) {
+                          updateItem(index, { quantity: Number(e.target.value) });
+                        }
                       }}
                     />
                   </div>

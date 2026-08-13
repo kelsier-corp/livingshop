@@ -34,7 +34,7 @@ export interface ProductCategoryRepository {
 export interface AttributeCatalogRepository {
   findAll(): Promise<AttributeCatalog[]>;
   findById(id: string): Promise<AttributeCatalog | null>;
-  create(name: string): Promise<AttributeCatalog>;
+  create(name: string, values: string[]): Promise<AttributeCatalog>;
   update(id: string, name: string): Promise<AttributeCatalog>;
   delete(id: string): Promise<void>;
   addValue(attributeCatalogId: string, value: string): Promise<AttributeCatalogValue>;

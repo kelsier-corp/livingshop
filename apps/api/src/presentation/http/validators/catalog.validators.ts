@@ -12,7 +12,7 @@ export const attributeDefinitionInputSchema = z.object({
 export const productTypeInputSchema = z.object({
   name: z.string().trim().min(1),
   description: z.string().trim().optional().nullable(),
-  basePrice: z.number().nonnegative(),
+  basePrice: z.number().positive(),
   categoryIds: z.array(z.string().uuid()).default([]),
   active: z.boolean().optional(),
   includeInFactorySheet: z.boolean().optional(),
@@ -36,7 +36,7 @@ export const bulkPriceInputSchema = z.object({
   prices: z.array(
     z.object({
       id: z.string().uuid(),
-      basePrice: z.number().nonnegative(),
+      basePrice: z.number().positive(),
     })
   ),
 });
@@ -51,7 +51,12 @@ export const productCategoryInputSchema = z.object({
   name: z.string().trim().min(1),
 });
 
-export const attributeCatalogInputSchema = z.object({
+export const attributeCatalogCreateSchema = z.object({
+  name: z.string().trim().min(1),
+  values: z.array(z.string().trim().min(1)).min(1),
+});
+
+export const attributeCatalogUpdateSchema = z.object({
   name: z.string().trim().min(1),
 });
 

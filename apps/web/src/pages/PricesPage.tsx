@@ -7,7 +7,7 @@ import { CategorySelector } from "@/components/CategorySelector";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { Card, FieldLabel, PageHeader, PrimaryButton, TextInput } from "@/components/ui";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { respectsMinimum } from "@/utils/number";
+import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 const PAGE_SIZE = 10;
 
@@ -53,6 +53,7 @@ export function PricesPage() {
   });
 
   const hasChanges = Object.keys(prices).length > 0;
+  const hasInvalidPrice = Object.values(prices).some((price) => price <= 0);
 
   function priceFor(productType: ProductType): number {
     return prices[productType.id] ?? productType.basePrice;
@@ -74,13 +75,14 @@ export function PricesPage() {
       align: "right",
       render: (p) => (
         <TextInput
-          type="number"
-          min={0}
-          step="0.01"
-          className="ml-auto w-40 text-right font-mono"
+          type="text"
+          inputMode="decimal"
+          className={`ml-auto w-40 text-right font-mono ${priceFor(p) <= 0 ? "border-signal" : ""}`}
           value={priceFor(p)}
           onChange={(e) => {
-            if (respectsMinimum(e.target.value)) setPrices({ ...prices, [p.id]: Number(e.target.value) });
+            if (isNumericInput(e.target.value) && respectsMinimum(e.target.value)) {
+              setPrices({ ...prices, [p.id]: Number(e.target.value) });
+            }
           }}
         />
       ),
@@ -103,11 +105,13 @@ export function PricesPage() {
             <div>
               <FieldLabel>Porcentaje (ej. 5 o -10)</FieldLabel>
               <TextInput
-                type="number"
-                step="0.1"
+                type="text"
+                inputMode="decimal"
                 className="w-40"
                 value={percentage}
-                onChange={(e) => setPercentage(e.target.value)}
+                onChange={(e) => {
+                  if (isNumericInput(e.target.value, { allowNegative: true })) setPercentage(e.target.value);
+                }}
               />
             </div>
             <PrimaryButton
@@ -132,9 +136,15 @@ export function PricesPage() {
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
-        <PrimaryButton disabled={!hasChanges || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-          Guardar cambios individuales
-        </PrimaryButton>
+        <div className="text-right">
+          <PrimaryButton
+            disabled={!hasChanges || hasInvalidPrice || saveMutation.isPending}
+            onClick={() => saveMutation.mutate()}
+          >
+            Guardar cambios individuales
+          </PrimaryButton>
+          {hasInvalidPrice && <p className="mt-1 text-xs text-signal">El precio debe ser mayor a 0.</p>}
+        </div>
       </Card>
 
       <Card>

@@ -9,7 +9,7 @@ import { OrderStatus } from "@/api/types";
 import { Collapsible } from "@/components/Collapsible";
 import { ORDER_STATUS_LABEL, OrderStatusBadge } from "@/components/OrderStatusBadge";
 import { Card, FieldLabel, FileInput, PageHeader, PrimaryButton, Select, SecondaryButton, TextInput } from "@/components/ui";
-import { respectsMinimum } from "@/utils/number";
+import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 const STATUSES: OrderStatus[] = ["draft", "confirmed", "in_production", "delivered", "cancelled"];
 
@@ -299,13 +299,14 @@ export function OrderDetailPage() {
 
           <form onSubmit={handlePaymentSubmit} className="grid grid-cols-4 gap-2">
             <TextInput
-              type="number"
-              min={0}
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               placeholder="Monto"
               value={paymentForm.amount}
               onChange={(e) => {
-                if (respectsMinimum(e.target.value)) setPaymentForm({ ...paymentForm, amount: e.target.value });
+                if (isNumericInput(e.target.value) && respectsMinimum(e.target.value)) {
+                  setPaymentForm({ ...paymentForm, amount: e.target.value });
+                }
               }}
             />
             <Select

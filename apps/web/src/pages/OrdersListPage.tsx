@@ -7,7 +7,7 @@ import { DataTable, DataTableColumn, DataTableSort } from "@/components/DataTabl
 import { OrderStatusBadge } from "@/components/OrderStatusBadge";
 import { Card, FieldLabel, PageHeader, PrimaryButton, SecondaryButton, TextInput } from "@/components/ui";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { respectsMinimum } from "@/utils/number";
+import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 const PAGE_SIZE = 10;
 
@@ -158,12 +158,14 @@ export function OrdersListPage() {
           <div>
             <FieldLabel>Número</FieldLabel>
             <TextInput
-              type="number"
-              min={0}
+              type="text"
+              inputMode="numeric"
               placeholder="ej. 7901"
               value={numberFilter}
               onChange={(e) => {
-                if (respectsMinimum(e.target.value)) updateFilter(setNumberFilter, e.target.value);
+                if (isNumericInput(e.target.value, { allowDecimal: false }) && respectsMinimum(e.target.value)) {
+                  updateFilter(setNumberFilter, e.target.value);
+                }
               }}
             />
           </div>

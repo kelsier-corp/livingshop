@@ -236,10 +236,10 @@ export class PrismaAttributeCatalogRepository implements AttributeCatalogReposit
     return row ? toCatalogDomain(row) : null;
   }
 
-  async create(name: string): Promise<AttributeCatalog> {
+  async create(name: string, values: string[]): Promise<AttributeCatalog> {
     const row = await this.prisma.attributeCatalog.create({
-      data: { name },
-      include: { values: true },
+      data: { name, values: { create: values.map((value) => ({ value })) } },
+      include: { values: { orderBy: { value: "asc" } } },
     });
     return toCatalogDomain(row);
   }
