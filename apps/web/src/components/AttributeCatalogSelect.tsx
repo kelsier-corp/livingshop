@@ -27,14 +27,15 @@ export function AttributeCatalogSelect({ catalogs, selectedId, onChange }: Props
     onChange(id);
     setQuery("");
     setOpen(false);
+    (document.activeElement as HTMLElement | null)?.blur();
   }
 
   return (
     <div className="relative">
       <TextInput
         required={!selectedId}
-        placeholder={selected ? selected.name : "Elegir catálogo…"}
-        value={open ? query : ""}
+        placeholder="Elegir catálogo…"
+        value={open ? query : (selected?.name ?? "")}
         onFocus={() => {
           setOpen(true);
           setQuery("");
