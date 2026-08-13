@@ -69,6 +69,7 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
         description: input.description ?? null,
         basePrice: input.basePrice,
         active: input.active ?? true,
+        includeInFactorySheet: input.includeInFactorySheet ?? true,
         categories: { connect: input.categoryIds.map((id) => ({ id })) },
         attributeDefinitions: {
           create: input.attributeDefinitions.map((attribute, index) => ({
@@ -95,6 +96,7 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
           description: input.description ?? null,
           basePrice: input.basePrice,
           active: input.active ?? true,
+          includeInFactorySheet: input.includeInFactorySheet ?? true,
           categories: { set: input.categoryIds.map((categoryId) => ({ id: categoryId })) },
           attributeDefinitions: {
             create: input.attributeDefinitions.map((attribute, index) => ({
@@ -280,6 +282,7 @@ function toDomain(row: ProductTypeRow): ProductType {
     active: row.active,
     sketchUrl: row.sketchUrl,
     sketchFileName: row.sketchFileName,
+    includeInFactorySheet: row.includeInFactorySheet,
     categories: row.categories.map((category) => ({ id: category.id, name: category.name })),
     attributeDefinitions: row.attributeDefinitions.map(
       (attribute): AttributeDefinition => ({

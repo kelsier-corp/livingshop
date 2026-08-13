@@ -30,6 +30,7 @@ export interface ProductType {
   active: boolean;
   sketchUrl: string | null;
   sketchFileName: string | null;
+  includeInFactorySheet: boolean;
   categories: ProductCategoryRef[];
   attributeDefinitions: AttributeDefinition[];
 }
@@ -69,6 +70,7 @@ export interface ProductTypeInput {
   basePrice: number;
   categoryIds: string[];
   active?: boolean;
+  includeInFactorySheet?: boolean;
   attributeDefinitions: AttributeDefinitionInput[];
 }
 

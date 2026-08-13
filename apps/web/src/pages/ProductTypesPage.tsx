@@ -41,7 +41,15 @@ const DATA_TYPE_LABEL: Record<AttributeDataType, string> = {
 };
 
 function emptyForm(): ProductTypeInput {
-  return { name: "", description: "", basePrice: 0, categoryIds: [], active: true, attributeDefinitions: [] };
+  return {
+    name: "",
+    description: "",
+    basePrice: 0,
+    categoryIds: [],
+    active: true,
+    includeInFactorySheet: true,
+    attributeDefinitions: [],
+  };
 }
 
 function formatCurrency(value: number): string {
@@ -125,6 +133,7 @@ export function ProductTypesPage() {
       basePrice: productType.basePrice,
       categoryIds: productType.categories.map((category) => category.id),
       active: productType.active,
+      includeInFactorySheet: productType.includeInFactorySheet,
       attributeDefinitions: productType.attributeDefinitions.map((attribute) => ({
         name: attribute.name,
         dataType: attribute.dataType,
@@ -309,6 +318,20 @@ export function ProductTypesPage() {
                 selectedIds={form.categoryIds}
                 onChange={(categoryIds) => setForm({ ...form, categoryIds })}
               />
+            </div>
+            <div className="col-span-2">
+              <label className="flex items-center gap-2 text-sm text-ink-soft">
+                <input
+                  type="checkbox"
+                  checked={form.includeInFactorySheet ?? true}
+                  onChange={(e) => setForm({ ...form, includeInFactorySheet: e.target.checked })}
+                />
+                Incluir en la ficha técnica de fábrica
+              </label>
+              <p className="mt-1 text-xs text-ink-soft/70">
+                Desmarcá esto para productos sin trabajo de fábrica (ej. flete, instalación) — no van a aparecer
+                en la ficha técnica de ninguna orden que los incluya.
+              </p>
             </div>
             <div className="col-span-2">
               <FieldLabel>Croquis</FieldLabel>
