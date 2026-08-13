@@ -5,7 +5,7 @@ import { pdfUrl } from "@/api/client";
 import { fetchProductionBoard, toggleProductionStage } from "@/api/production";
 import { OrderItemWithContext, ProductionStage } from "@/api/types";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
-import { Card, PageHeader, SecondaryButton } from "@/components/ui";
+import { Card, FieldLabel, PageHeader, SecondaryButton, TextInput } from "@/components/ui";
 
 const PAGE_SIZE = 15;
 
@@ -17,9 +17,10 @@ function formatDate(value: string | null): string {
 export function ProductionPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [deliveryDateFilter, setDeliveryDateFilter] = useState("");
   const { data, isLoading } = useQuery({
-    queryKey: ["production-board", page],
-    queryFn: () => fetchProductionBoard({ page, pageSize: PAGE_SIZE }),
+    queryKey: ["production-board", page, deliveryDateFilter],
+    queryFn: () => fetchProductionBoard({ page, pageSize: PAGE_SIZE, deliveryDate: deliveryDateFilter || undefined }),
   });
 
   const toggleMutation = useMutation({
@@ -61,6 +62,20 @@ export function ProductionPage() {
           </a>
         }
       />
+
+      <Card className="mb-4">
+        <div className="max-w-xs">
+          <FieldLabel>Fecha de entrega</FieldLabel>
+          <TextInput
+            type="date"
+            value={deliveryDateFilter}
+            onChange={(e) => {
+              setDeliveryDateFilter(e.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
+      </Card>
 
       <Card>
         {isLoading ? (

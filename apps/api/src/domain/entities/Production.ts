@@ -11,4 +11,5 @@ export interface OrderItemWithContext extends OrderItem {
 export interface ProductionListQuery {
   page: number;
   pageSize: number;
+  deliveryDate?: Date;
 }

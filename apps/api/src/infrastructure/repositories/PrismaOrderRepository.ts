@@ -231,6 +231,14 @@ export class PrismaOrderRepository implements OrderRepository {
   async listItemsWithContext(query: ProductionListQuery): Promise<PageResult<OrderItemWithContext>> {
     const where: Prisma.OrderItemWhereInput = { order: { status: { in: ["confirmed", "in_production"] } } };
 
+    if (query.deliveryDate) {
+      const start = new Date(query.deliveryDate);
+      start.setUTCHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setUTCDate(end.getUTCDate() + 1);
+      where.deliveryDate = { gte: start, lt: end };
+    }
+
     const [rows, total] = await Promise.all([
       this.prisma.orderItem.findMany({
         where,
