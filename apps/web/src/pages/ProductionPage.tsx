@@ -24,6 +24,7 @@ export function ProductionPage() {
   const [page, setPage] = useState(1);
   const [deliveryDateFilter, setDeliveryDateFilter] = useState("");
   const [numberFilter, setNumberFilter] = useState("");
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const debouncedNumberFilter = useDebouncedValue(numberFilter);
   const { data, isLoading } = useQuery({
     queryKey: ["production-board", page, deliveryDateFilter, debouncedNumberFilter],
@@ -59,34 +60,33 @@ export function ProductionPage() {
     {
       key: "delivery",
       header: "Entrega",
-      width: "8%",
+      width: "10%",
       render: (row) => formatDate(row.deliveryDate),
     },
     {
       key: "order",
       header: "Orden",
-      width: "6%",
+      width: "8%",
       render: (row) => <span className="font-mono text-ink-soft">#{row.orderNumber}</span>,
     },
     {
       key: "product",
       header: "Producto",
-      width: "15%",
+      width: "30%",
       truncate: true,
       render: (row) => <span className="font-medium text-ink">{row.productTypeName}</span>,
     },
-    { key: "qty", header: "Cant.", width: "5%", render: (row) => row.quantity },
+    { key: "qty", header: "Cant.", width: "6%", render: (row) => row.quantity },
     {
       key: "status",
       header: "Estado",
-      width: "10%",
+      width: "16%",
       render: (row) => (
         <Select
           value={row.orderStatus}
           onChange={(e) =>
             statusMutation.mutate({ orderId: row.orderId, status: e.target.value as OrderStatus })
           }
-          className="text-xs"
         >
           {FACTORY_STATUSES.map((status) => (
             <option key={status} value={status}>
@@ -96,25 +96,52 @@ export function ProductionPage() {
         </Select>
       ),
     },
-    ...PRODUCTION_STAGES.map<DataTableColumn<OrderItemWithContext>>((stage) => ({
-      key: stage,
-      header: PRODUCTION_STAGE_LABEL[stage],
-      width: `${56 / PRODUCTION_STAGES.length}%`,
-      align: "center",
-      render: (row) => {
-        const status = row.productionStages.find((s) => s.stage === stage);
-        return (
-          <input
-            type="checkbox"
-            checked={status?.completed ?? false}
-            onChange={(e) =>
-              toggleMutation.mutate({ orderItemId: row.id, stage, completed: e.target.checked })
-            }
-          />
-        );
-      },
-    })),
+    {
+      key: "actions",
+      header: "",
+      width: "30%",
+      align: "right",
+      render: (row) => (
+        <div className="flex justify-end gap-2">
+          <SecondaryButton
+            type="button"
+            onClick={() => setExpandedRowId(expandedRowId === row.id ? null : row.id)}
+          >
+            {expandedRowId === row.id ? "Ocultar progreso" : "Ver progreso"}
+          </SecondaryButton>
+          <a
+            href={pdfUrl(`/pdf/orders/${row.orderId}/factory-sheet.pdf`)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <SecondaryButton type="button">Ficha técnica</SecondaryButton>
+          </a>
+        </div>
+      ),
+    },
   ];
+
+  function renderProgress(row: OrderItemWithContext) {
+    return (
+      <div className="flex flex-wrap gap-x-6 gap-y-2">
+        {PRODUCTION_STAGES.map((stage) => {
+          const stageStatus = row.productionStages.find((s) => s.stage === stage);
+          return (
+            <label key={stage} className="flex items-center gap-2 text-sm text-ink-soft">
+              <input
+                type="checkbox"
+                checked={stageStatus?.completed ?? false}
+                onChange={(e) =>
+                  toggleMutation.mutate({ orderItemId: row.id, stage, completed: e.target.checked })
+                }
+              />
+              {PRODUCTION_STAGE_LABEL[stage]}
+            </label>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -170,6 +197,8 @@ export function ProductionPage() {
             rows={data?.items ?? []}
             rowKey={(row) => row.id}
             emptyMessage="Todavía no hay productos en producción."
+            expandedRowKey={expandedRowId}
+            renderExpandedRow={renderProgress}
             pagination={{
               mode: "server",
               page,
