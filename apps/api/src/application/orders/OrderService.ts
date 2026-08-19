@@ -1,4 +1,4 @@
-import { AttachmentType, OrderStatus, ProductionStage } from "@domain/entities/enums";
+import { AttachmentType, OrderStatus, ProductionStage, UserRole } from "@domain/entities/enums";
 import {
   Attachment,
   Order,
@@ -10,7 +10,7 @@ import {
   PaymentInput,
 } from "@domain/entities/Order";
 import { PageResult } from "@domain/entities/Pagination";
-import { NotFoundError, ValidationError } from "@domain/errors/DomainError";
+import { ForbiddenError, NotFoundError, ValidationError } from "@domain/errors/DomainError";
 import { CustomerRepository } from "@domain/repositories/CustomerRepository";
 import { ProductTypeRepository } from "@domain/repositories/CatalogRepository";
 import { OrderRepository } from "@domain/repositories/OrderRepository";
@@ -41,8 +41,22 @@ export class OrderService {
     return this.orderRepository.create(data);
   }
 
-  async updateStatus(id: string, status: OrderStatus): Promise<Order> {
-    await this.getById(id);
+  async updateStatus(id: string, status: OrderStatus, role: UserRole): Promise<Order> {
+    const order = await this.getById(id);
+    // Sales confirms an order but has no visibility into when the factory floor actually
+    // starts building it, so factory needs to be able to toggle that transition themselves —
+    // but only between confirmed and in_production, never into delivered/cancelled/draft.
+    if (role === "factory") {
+      const FACTORY_ALLOWED_STATUSES: OrderStatus[] = ["confirmed", "in_production"];
+      if (
+        !FACTORY_ALLOWED_STATUSES.includes(order.status) ||
+        !FACTORY_ALLOWED_STATUSES.includes(status)
+      ) {
+        throw new ForbiddenError(
+          "Factory can only toggle an order between confirmed and in_production"
+        );
+      }
+    }
     return this.orderRepository.updateStatus(id, status);
   }
 

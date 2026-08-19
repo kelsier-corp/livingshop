@@ -5,6 +5,7 @@ export interface ProductionListParams {
   page: number;
   pageSize: number;
   deliveryDate?: string;
+  number?: number;
 }
 
 export function fetchProductionBoard(

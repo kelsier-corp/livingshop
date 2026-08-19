@@ -243,7 +243,10 @@ export class PrismaOrderRepository implements OrderRepository {
     query: ProductionListQuery
   ): Promise<PageResult<OrderItemWithContext>> {
     const where: Prisma.OrderItemWhereInput = {
-      order: { status: { in: ["confirmed", "in_production"] } },
+      order: {
+        status: { in: ["confirmed", "in_production"] },
+        ...(query.number !== undefined ? { number: query.number } : {}),
+      },
     };
 
     if (query.deliveryDate) {

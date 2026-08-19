@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { Fragment, ReactNode, useState } from "react";
 import { SecondaryButton } from "./ui";
 
 export interface DataTableColumn<T> {
@@ -37,6 +37,12 @@ interface Props<T> {
   pagination?: ServerPagination | ClientPagination;
   emptyMessage?: string;
   sort?: DataTableSort;
+  // Renders extra content in its own full-width row directly below a given row — e.g. an
+  // expand/collapse detail panel triggered by a button in one of the columns. The caller owns
+  // which row (if any) is expanded, since that's usually driven by a button inside a column's
+  // own render(row), not something DataTable itself has a reason to know about.
+  expandedRowKey?: string | null;
+  renderExpandedRow?: (row: T) => ReactNode;
 }
 
 function alignClass(align?: "left" | "right" | "center"): string {
@@ -52,6 +58,8 @@ export function DataTable<T>({
   pagination,
   emptyMessage = "No hay resultados.",
   sort,
+  expandedRowKey,
+  renderExpandedRow,
 }: Props<T>) {
   const [clientPage, setClientPage] = useState(1);
 
@@ -112,20 +120,33 @@ export function DataTable<T>({
             </tr>
           </thead>
           <tbody>
-            {visibleRows.map((row) => (
-              <tr key={rowKey(row)} className="border-b border-line/60">
-                {columns.map((column) => (
-                  <td
-                    key={column.key}
-                    className={`py-2 pr-2 ${alignClass(column.align)} ${
-                      column.truncate ? "overflow-hidden truncate whitespace-nowrap" : ""
-                    }`}
-                  >
-                    {column.render(row)}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {visibleRows.map((row) => {
+              const key = rowKey(row);
+              const isExpanded = !!renderExpandedRow && expandedRowKey === key;
+              return (
+                <Fragment key={key}>
+                  <tr className="border-b border-line/60">
+                    {columns.map((column) => (
+                      <td
+                        key={column.key}
+                        className={`py-2 pr-2 ${alignClass(column.align)} ${
+                          column.truncate ? "overflow-hidden truncate whitespace-nowrap" : ""
+                        }`}
+                      >
+                        {column.render(row)}
+                      </td>
+                    ))}
+                  </tr>
+                  {isExpanded && (
+                    <tr className="border-b border-line/60 bg-paper">
+                      <td colSpan={columns.length} className="px-2 py-3">
+                        {renderExpandedRow!(row)}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
             {visibleRows.length === 0 && (
               <tr>
                 <td colSpan={columns.length} className="py-6 text-center text-ink-soft">
