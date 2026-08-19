@@ -8,7 +8,7 @@ export function createOrdersRouter(controller: OrdersController): Router {
   router.get("/", requireRole("admin", "sales", "factory"), controller.list);
   router.get("/:id", requireRole("admin", "sales", "factory"), controller.getById);
   router.post("/", requireRole("admin", "sales"), controller.create);
-  router.patch("/:id/status", requireRole("admin", "sales"), controller.updateStatus);
+  router.patch("/:id/status", requireRole("admin", "sales", "factory"), controller.updateStatus);
   router.post("/:id/payments", requireRole("admin", "sales"), controller.addPayment);
   router.post(
     "/items/:itemId/attachments",
