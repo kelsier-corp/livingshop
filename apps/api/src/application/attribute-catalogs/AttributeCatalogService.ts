@@ -1,11 +1,16 @@
-import { AttributeCatalog, AttributeCatalogValue } from "@domain/entities/Catalog";
+import { AttributeCatalog, AttributeCatalogListQuery, AttributeCatalogValue } from "@domain/entities/Catalog";
 import { NotFoundError, ValidationError } from "@domain/errors/DomainError";
+import { PageResult } from "@domain/entities/Pagination";
 import { AttributeCatalogRepository } from "@domain/repositories/CatalogRepository";
 
 export class AttributeCatalogService {
   constructor(private readonly repository: AttributeCatalogRepository) {}
 
-  list(): Promise<AttributeCatalog[]> {
+  list(query: AttributeCatalogListQuery): Promise<PageResult<AttributeCatalog>> {
+    return this.repository.list(query);
+  }
+
+  listAll(): Promise<AttributeCatalog[]> {
     return this.repository.findAll();
   }
 
@@ -15,9 +20,11 @@ export class AttributeCatalogService {
     return catalog;
   }
 
-  create(name: string): Promise<AttributeCatalog> {
+  create(name: string, values: string[]): Promise<AttributeCatalog> {
     if (!name.trim()) throw new ValidationError("name is required");
-    return this.repository.create(name);
+    const trimmedValues = values.map((value) => value.trim()).filter((value) => value.length > 0);
+    if (trimmedValues.length === 0) throw new ValidationError("At least one value is required");
+    return this.repository.create(name, trimmedValues);
   }
 
   async update(id: string, name: string): Promise<AttributeCatalog> {
@@ -42,7 +49,13 @@ export class AttributeCatalogService {
     return this.repository.updateValue(id, value, active);
   }
 
-  deleteValue(id: string): Promise<void> {
-    return this.repository.deleteValue(id);
+  async deleteValue(id: string): Promise<void> {
+    const value = await this.repository.findValueById(id);
+    if (!value) throw new NotFoundError("AttributeCatalogValue", id);
+    const catalog = await this.getById(value.attributeCatalogId);
+    if (catalog.values.length <= 1) {
+      throw new ValidationError("A catalog must keep at least one value");
+    }
+    await this.repository.deleteValue(id);
   }
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AttributeCatalogValue } from "@/api/types";
+import { normalizeForSearch } from "@/utils/text";
 import { TextInput } from "./ui";
 
 interface Props {
@@ -19,9 +20,9 @@ export function CatalogValueSelect({ values, value, onChange, required }: Props)
   const [open, setOpen] = useState(false);
 
   const activeValues = values.filter((v) => v.active);
-  const term = query.trim().toLowerCase();
+  const term = normalizeForSearch(query.trim());
   const matches = term
-    ? activeValues.filter((v) => v.value.toLowerCase().includes(term))
+    ? activeValues.filter((v) => normalizeForSearch(v.value).includes(term))
     : activeValues.slice(0, VISIBLE_LIMIT);
 
   function pick(pickedValue: string) {
@@ -56,7 +57,9 @@ export function CatalogValueSelect({ values, value, onChange, required }: Props)
               {v.value}
             </button>
           ))}
-          {matches.length === 0 && <p className="px-3 py-2 text-sm text-ink-soft">Sin coincidencias.</p>}
+          {matches.length === 0 && (
+            <p className="px-3 py-2 text-sm text-ink-soft">Sin coincidencias.</p>
+          )}
           {!term && activeValues.length > matches.length && (
             <p className="px-3 py-2 text-xs text-ink-soft/70">
               Mostrando {matches.length} de {activeValues.length} — escribí para buscar el resto.

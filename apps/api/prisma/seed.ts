@@ -31,6 +31,10 @@ async function main() {
     create: { name: "David Gomez", email: "factory@livingshop.test", role: "factory" },
   });
 
+  for (const name of ["Efectivo", "Débito", "Crédito", "Transferencia"]) {
+    await prisma.paymentMethod.upsert({ where: { name }, update: {}, create: { name } });
+  }
+
   const fabricCatalog = await prisma.attributeCatalog.upsert({
     where: { name: "Tela" },
     update: {},
@@ -52,7 +56,9 @@ async function main() {
     update: {},
     create: {
       name: "Color de pata",
-      values: { create: [{ value: "Marrón medio" }, { value: "Marrón oscuro" }, { value: "Natural" }] },
+      values: {
+        create: [{ value: "Marrón medio" }, { value: "Marrón oscuro" }, { value: "Natural" }],
+      },
     },
   });
 
@@ -97,9 +103,25 @@ async function main() {
       attributeDefinitions: {
         create: [
           { name: "Medida", dataType: "text", sortOrder: 0, required: true },
-          { name: "Tipo de brazo", dataType: "catalog", attributeCatalogId: armTypeCatalog.id, sortOrder: 1 },
-          { name: "Patas", dataType: "catalog", attributeCatalogId: legsColorCatalog.id, sortOrder: 2 },
-          { name: "Tela", dataType: "catalog", attributeCatalogId: fabricCatalog.id, sortOrder: 3, required: true },
+          {
+            name: "Tipo de brazo",
+            dataType: "catalog",
+            attributeCatalogId: armTypeCatalog.id,
+            sortOrder: 1,
+          },
+          {
+            name: "Patas",
+            dataType: "catalog",
+            attributeCatalogId: legsColorCatalog.id,
+            sortOrder: 2,
+          },
+          {
+            name: "Tela",
+            dataType: "catalog",
+            attributeCatalogId: fabricCatalog.id,
+            sortOrder: 3,
+            required: true,
+          },
           { name: "Densidad almohadón asiento", dataType: "text", sortOrder: 4 },
           { name: "Orientación", dataType: "text", sortOrder: 5 },
         ],
@@ -118,9 +140,20 @@ async function main() {
       attributeDefinitions: {
         create: [
           { name: "Medida", dataType: "text", sortOrder: 0, required: true },
-          { name: "Patas", dataType: "catalog", attributeCatalogId: legsColorCatalog.id, sortOrder: 1 },
-          { name: "Tela", dataType: "catalog", attributeCatalogId: fabricCatalog.id, sortOrder: 2, required: true },
-          { name: "Color de tachas", dataType: "color", sortOrder: 3 },
+          {
+            name: "Patas",
+            dataType: "catalog",
+            attributeCatalogId: legsColorCatalog.id,
+            sortOrder: 1,
+          },
+          {
+            name: "Tela",
+            dataType: "catalog",
+            attributeCatalogId: fabricCatalog.id,
+            sortOrder: 2,
+            required: true,
+          },
+          { name: "Color de tachas", dataType: "text", sortOrder: 3 },
         ],
       },
     },
@@ -136,8 +169,19 @@ async function main() {
       categories: { connect: [{ id: sillonesCategory.id }] },
       attributeDefinitions: {
         create: [
-          { name: "Patas", dataType: "catalog", attributeCatalogId: legsColorCatalog.id, sortOrder: 0 },
-          { name: "Tela", dataType: "catalog", attributeCatalogId: fabricCatalog.id, sortOrder: 1, required: true },
+          {
+            name: "Patas",
+            dataType: "catalog",
+            attributeCatalogId: legsColorCatalog.id,
+            sortOrder: 0,
+          },
+          {
+            name: "Tela",
+            dataType: "catalog",
+            attributeCatalogId: fabricCatalog.id,
+            sortOrder: 1,
+            required: true,
+          },
         ],
       },
     },
@@ -153,8 +197,19 @@ async function main() {
       categories: { connect: [{ id: serviciosCategory.id }] },
       attributeDefinitions: {
         create: [
-          { name: "Tela", dataType: "catalog", attributeCatalogId: fabricCatalog.id, sortOrder: 0, required: true },
-          { name: "Patas", dataType: "catalog", attributeCatalogId: legsColorCatalog.id, sortOrder: 1 },
+          {
+            name: "Tela",
+            dataType: "catalog",
+            attributeCatalogId: fabricCatalog.id,
+            sortOrder: 0,
+            required: true,
+          },
+          {
+            name: "Patas",
+            dataType: "catalog",
+            attributeCatalogId: legsColorCatalog.id,
+            sortOrder: 1,
+          },
         ],
       },
     },
@@ -171,7 +226,13 @@ async function main() {
       attributeDefinitions: {
         create: [
           { name: "Medida", dataType: "text", sortOrder: 0, required: true },
-          { name: "Tela", dataType: "catalog", attributeCatalogId: fabricCatalog.id, sortOrder: 1, required: true },
+          {
+            name: "Tela",
+            dataType: "catalog",
+            attributeCatalogId: fabricCatalog.id,
+            sortOrder: 1,
+            required: true,
+          },
         ],
       },
     },
@@ -186,7 +247,15 @@ async function main() {
       basePrice: 320000,
       categories: { connect: [{ id: decoCategory.id }] },
       attributeDefinitions: {
-        create: [{ name: "Tela", dataType: "catalog", attributeCatalogId: fabricCatalog.id, sortOrder: 0, required: true }],
+        create: [
+          {
+            name: "Tela",
+            dataType: "catalog",
+            attributeCatalogId: fabricCatalog.id,
+            sortOrder: 0,
+            required: true,
+          },
+        ],
       },
     },
   });
@@ -275,12 +344,19 @@ async function main() {
                 "Densidad almohadón asiento": "Media",
                 Orientación: "Derecha",
               },
-              factoryNotes: "3 almohadones deco 50x50 en Camel, 2 en Natural, 1 deco 60x40 en Natural",
+              factoryNotes:
+                "3 almohadones deco 50x50 en Camel, 2 en Natural, 1 deco 60x40 en Natural",
             },
           ],
         },
         payments: {
-          create: [{ amount: sofaType.basePrice.toNumber(), method: "efectivo", note: "Pagado en su totalidad" }],
+          create: [
+            {
+              amount: sofaType.basePrice.toNumber(),
+              method: "efectivo",
+              note: "Pagado en su totalidad",
+            },
+          ],
         },
       },
     });
@@ -382,7 +458,11 @@ async function main() {
 
   for (const spec of moreOrders) {
     const existing = await prisma.order.findFirst({
-      where: { customerId: spec.customer.id, status: spec.status, notes: `seed:${spec.productType.name}` },
+      where: {
+        customerId: spec.customer.id,
+        status: spec.status,
+        notes: `seed:${spec.productType.name}`,
+      },
     });
     if (existing) continue;
 

@@ -35,7 +35,9 @@ export function ProductionSheetDocument({ rows }: Props) {
             <View style={baseStyles.tableHeaderRow}>
               <Text style={[baseStyles.tableHeaderCell, { flex: 0.8 }]}>Orden</Text>
               <Text style={[baseStyles.tableHeaderCell, { flex: 3 }]}>Producto</Text>
-              <Text style={[baseStyles.tableHeaderCell, { flex: 0.6, textAlign: "center" }]}>Cant.</Text>
+              <Text style={[baseStyles.tableHeaderCell, { flex: 0.6, textAlign: "center" }]}>
+                Cant.
+              </Text>
               {PRODUCTION_STAGES.map((stage) => (
                 <Text
                   key={stage}
@@ -46,7 +48,9 @@ export function ProductionSheetDocument({ rows }: Props) {
               ))}
             </View>
             {groupRows.map((row) => {
-              const stageByName = new Map(row.productionStages.map((stage) => [stage.stage, stage]));
+              const stageByName = new Map(
+                row.productionStages.map((stage) => [stage.stage, stage])
+              );
               return (
                 <View key={row.id} style={baseStyles.tableRow}>
                   <Text style={[baseStyles.tableCell, { flex: 0.8 }]}>{row.orderNumber}</Text>

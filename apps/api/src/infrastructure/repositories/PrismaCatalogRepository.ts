@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import {
   AttributeCatalog,
+  AttributeCatalogListQuery,
   AttributeCatalogValue,
   AttributeDefinition,
   ProductCategory,
@@ -17,6 +18,7 @@ import {
   ProductTypeRepository,
 } from "@domain/repositories/CatalogRepository";
 import { StoredFile } from "@domain/repositories/FileStorage";
+import { findIdsByUnaccentedSearch } from "./accentInsensitiveSearch";
 
 const productTypeInclude = {
   categories: true,
@@ -27,9 +29,15 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   async list(query: ProductTypeListQuery): Promise<PageResult<ProductType>> {
+    const matchingIds = query.search
+      ? await findIdsByUnaccentedSearch(this.prisma, "product_types", ["name"], query.search)
+      : null;
+
     const where: Prisma.ProductTypeWhereInput = {
-      ...(query.search ? { name: { contains: query.search, mode: "insensitive" } } : {}),
-      ...(query.categoryId ? { categories: { some: { id: query.categoryId } } } : {}),
+      ...(matchingIds ? { id: { in: matchingIds } } : {}),
+      ...(query.categoryIds && query.categoryIds.length > 0
+        ? { categories: { some: { id: { in: query.categoryIds } } } }
+        : {}),
     };
 
     const [rows, total] = await Promise.all([
@@ -69,6 +77,7 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
         description: input.description ?? null,
         basePrice: input.basePrice,
         active: input.active ?? true,
+        includeInFactorySheet: input.includeInFactorySheet ?? true,
         categories: { connect: input.categoryIds.map((id) => ({ id })) },
         attributeDefinitions: {
           create: input.attributeDefinitions.map((attribute, index) => ({
@@ -95,6 +104,7 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
           description: input.description ?? null,
           basePrice: input.basePrice,
           active: input.active ?? true,
+          includeInFactorySheet: input.includeInFactorySheet ?? true,
           categories: { set: input.categoryIds.map((categoryId) => ({ id: categoryId })) },
           attributeDefinitions: {
             create: input.attributeDefinitions.map((attribute, index) => ({
@@ -128,7 +138,10 @@ export class PrismaProductTypeRepository implements ProductTypeRepository {
     return this.findAll();
   }
 
-  async applyPercentageIncrease(percentage: number, categoryIds: string[] | null): Promise<ProductType[]> {
+  async applyPercentageIncrease(
+    percentage: number,
+    categoryIds: string[] | null
+  ): Promise<ProductType[]> {
     const targets = await this.prisma.productType.findMany({
       where: categoryIds ? { categories: { some: { id: { in: categoryIds } } } } : undefined,
       select: { id: true, basePrice: true },
@@ -159,9 +172,10 @@ export class PrismaProductCategoryRepository implements ProductCategoryRepositor
   constructor(private readonly prisma: PrismaClient) {}
 
   async list(query: ProductCategoryListQuery): Promise<PageResult<ProductCategory>> {
-    const where: Prisma.ProductCategoryWhereInput = query.search
-      ? { name: { contains: query.search, mode: "insensitive" } }
-      : {};
+    const matchingIds = query.search
+      ? await findIdsByUnaccentedSearch(this.prisma, "product_categories", ["name"], query.search)
+      : null;
+    const where: Prisma.ProductCategoryWhereInput = matchingIds ? { id: { in: matchingIds } } : {};
 
     const [rows, total] = await Promise.all([
       this.prisma.productCategory.findMany({
@@ -175,7 +189,11 @@ export class PrismaProductCategoryRepository implements ProductCategoryRepositor
     ]);
 
     return {
-      items: rows.map((row) => ({ id: row.id, name: row.name, productCount: row._count.productTypes })),
+      items: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        productCount: row._count.productTypes,
+      })),
       total,
       page: query.page,
       pageSize: query.pageSize,
@@ -187,7 +205,11 @@ export class PrismaProductCategoryRepository implements ProductCategoryRepositor
       orderBy: { name: "asc" },
       include: { _count: { select: { productTypes: true } } },
     });
-    return rows.map((row) => ({ id: row.id, name: row.name, productCount: row._count.productTypes }));
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      productCount: row._count.productTypes,
+    }));
   }
 
   async create(name: string): Promise<ProductCategory> {
@@ -212,6 +234,19 @@ export class PrismaProductCategoryRepository implements ProductCategoryRepositor
 export class PrismaAttributeCatalogRepository implements AttributeCatalogRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
+  async list(query: AttributeCatalogListQuery): Promise<PageResult<AttributeCatalog>> {
+    const [rows, total] = await Promise.all([
+      this.prisma.attributeCatalog.findMany({
+        include: { values: { orderBy: { value: "asc" } } },
+        orderBy: { name: "asc" },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.attributeCatalog.count(),
+    ]);
+    return { items: rows.map(toCatalogDomain), total, page: query.page, pageSize: query.pageSize };
+  }
+
   async findAll(): Promise<AttributeCatalog[]> {
     const rows = await this.prisma.attributeCatalog.findMany({
       include: { values: { orderBy: { value: "asc" } } },
@@ -228,10 +263,10 @@ export class PrismaAttributeCatalogRepository implements AttributeCatalogReposit
     return row ? toCatalogDomain(row) : null;
   }
 
-  async create(name: string): Promise<AttributeCatalog> {
+  async create(name: string, values: string[]): Promise<AttributeCatalog> {
     const row = await this.prisma.attributeCatalog.create({
-      data: { name },
-      include: { values: true },
+      data: { name, values: { create: values.map((value) => ({ value })) } },
+      include: { values: { orderBy: { value: "asc" } } },
     });
     return toCatalogDomain(row);
   }
@@ -254,6 +289,11 @@ export class PrismaAttributeCatalogRepository implements AttributeCatalogReposit
       data: { attributeCatalogId, value },
     });
     return toValueDomain(row);
+  }
+
+  async findValueById(id: string): Promise<AttributeCatalogValue | null> {
+    const row = await this.prisma.attributeCatalogValue.findUnique({ where: { id } });
+    return row ? toValueDomain(row) : null;
   }
 
   async updateValue(id: string, value: string, active: boolean): Promise<AttributeCatalogValue> {
@@ -280,18 +320,17 @@ function toDomain(row: ProductTypeRow): ProductType {
     active: row.active,
     sketchUrl: row.sketchUrl,
     sketchFileName: row.sketchFileName,
+    includeInFactorySheet: row.includeInFactorySheet,
     categories: row.categories.map((category) => ({ id: category.id, name: category.name })),
-    attributeDefinitions: row.attributeDefinitions.map(
-      (attribute): AttributeDefinition => ({
-        id: attribute.id,
-        productTypeId: attribute.productTypeId,
-        name: attribute.name,
-        dataType: attribute.dataType as AttributeDefinition["dataType"],
-        attributeCatalogId: attribute.attributeCatalogId,
-        sortOrder: attribute.sortOrder,
-        required: attribute.required,
-      })
-    ),
+    attributeDefinitions: row.attributeDefinitions.map((attribute): AttributeDefinition => ({
+      id: attribute.id,
+      productTypeId: attribute.productTypeId,
+      name: attribute.name,
+      dataType: attribute.dataType as AttributeDefinition["dataType"],
+      attributeCatalogId: attribute.attributeCatalogId,
+      sortOrder: attribute.sortOrder,
+      required: attribute.required,
+    })),
   };
 }
 

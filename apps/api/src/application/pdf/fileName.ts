@@ -23,7 +23,11 @@ export function orderSheetFileName(orderNumber: number, customerFullName: string
   return `orden-${orderNumber}_${slugify(customerFullName)}_${dateStamp(new Date())}.pdf`;
 }
 
-export function factorySheetFileName(orderNumber: number, customerFullName: string, printedAt: Date | null): string {
+export function factorySheetFileName(
+  orderNumber: number,
+  customerFullName: string,
+  printedAt: Date | null
+): string {
   return `ficha-tecnica_orden-${orderNumber}_${slugify(customerFullName)}_${dateTimeStamp(printedAt ?? new Date())}.pdf`;
 }
 

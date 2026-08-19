@@ -4,7 +4,10 @@ import path from "path";
 import { FileStorage, StoredFile } from "@domain/repositories/FileStorage";
 
 export class LocalFileStorage implements FileStorage {
-  constructor(private readonly uploadsDir: string, private readonly publicPath = "/uploads") {}
+  constructor(
+    private readonly uploadsDir: string,
+    private readonly publicPath = "/uploads"
+  ) {}
 
   async save(originalName: string, buffer: Buffer, _mimeType: string): Promise<StoredFile> {
     await fs.mkdir(this.uploadsDir, { recursive: true });

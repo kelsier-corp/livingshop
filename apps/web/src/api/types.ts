@@ -19,7 +19,7 @@ export interface Customer {
   createdAt: string;
 }
 
-export type AttributeDataType = "text" | "number" | "catalog" | "color";
+export type AttributeDataType = "text" | "catalog";
 
 export interface AttributeDefinition {
   id: string;
@@ -48,6 +48,7 @@ export interface ProductType {
   active: boolean;
   sketchUrl: string | null;
   sketchFileName: string | null;
+  includeInFactorySheet: boolean;
   categories: ProductCategoryRef[];
   attributeDefinitions: AttributeDefinition[];
 }
@@ -129,6 +130,12 @@ export interface Payment {
   method: string;
   feePct: number | null;
   note: string | null;
+}
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  active: boolean;
 }
 
 export interface OrderTotals {

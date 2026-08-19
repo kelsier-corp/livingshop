@@ -1,10 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
-import { CustomerInput, createCustomer, deleteCustomer, fetchCustomers, updateCustomer } from "@/api/customers";
+import {
+  CustomerInput,
+  createCustomer,
+  deleteCustomer,
+  fetchCustomers,
+  updateCustomer,
+} from "@/api/customers";
 import { Customer } from "@/api/types";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { Modal } from "@/components/Modal";
-import { Card, DangerButton, FieldLabel, PageHeader, PrimaryButton, SecondaryButton, TextInput } from "@/components/ui";
+import {
+  Card,
+  DangerButton,
+  FieldLabel,
+  PageHeader,
+  PrimaryButton,
+  SecondaryButton,
+  TextInput,
+} from "@/components/ui";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const PAGE_SIZE = 10;
@@ -26,7 +40,8 @@ export function CustomersPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["customers", { page, search: debouncedSearch }],
-    queryFn: () => fetchCustomers({ page, pageSize: PAGE_SIZE, search: debouncedSearch || undefined }),
+    queryFn: () =>
+      fetchCustomers({ page, pageSize: PAGE_SIZE, search: debouncedSearch || undefined }),
   });
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -35,10 +50,19 @@ export function CustomersPage() {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["customers"] });
 
-  const createMutation = useMutation({ mutationFn: createCustomer, onSuccess: () => { invalidate(); resetForm(); } });
+  const createMutation = useMutation({
+    mutationFn: createCustomer,
+    onSuccess: () => {
+      invalidate();
+      resetForm();
+    },
+  });
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: CustomerInput }) => updateCustomer(id, input),
-    onSuccess: () => { invalidate(); resetForm(); },
+    onSuccess: () => {
+      invalidate();
+      resetForm();
+    },
   });
   const deleteMutation = useMutation({ mutationFn: deleteCustomer, onSuccess: invalidate });
 
@@ -78,9 +102,19 @@ export function CustomersPage() {
       key: "name",
       header: "Nombre",
       width: "25%",
-      render: (c) => <span className="font-medium text-ink">{c.firstName} {c.lastName}</span>,
+      render: (c) => (
+        <span className="font-medium text-ink">
+          {c.firstName} {c.lastName}
+        </span>
+      ),
     },
-    { key: "address", header: "Dirección", width: "30%", truncate: true, render: (c) => c.deliveryAddress ?? "-" },
+    {
+      key: "address",
+      header: "Dirección",
+      width: "30%",
+      truncate: true,
+      render: (c) => c.deliveryAddress ?? "-",
+    },
     {
       key: "contact",
       header: "Contacto",
@@ -104,14 +138,20 @@ export function CustomersPage() {
 
   return (
     <div>
-      <PageHeader title="Clientes" actions={<PrimaryButton onClick={startCreate}>Nuevo cliente</PrimaryButton>} />
+      <PageHeader
+        title="Clientes"
+        actions={<PrimaryButton onClick={startCreate}>Nuevo cliente</PrimaryButton>}
+      />
 
       <Card className="mb-4">
         <FieldLabel>Buscar</FieldLabel>
         <TextInput
           placeholder="Nombre, apellido, email o teléfono…"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
         />
       </Card>
 
@@ -124,20 +164,38 @@ export function CustomersPage() {
             rows={data?.items ?? []}
             rowKey={(c) => c.id}
             emptyMessage="No hay clientes que coincidan con la búsqueda."
-            pagination={{ mode: "server", page, pageSize: PAGE_SIZE, total: data?.total ?? 0, onPageChange: setPage }}
+            pagination={{
+              mode: "server",
+              page,
+              pageSize: PAGE_SIZE,
+              total: data?.total ?? 0,
+              onPageChange: setPage,
+            }}
           />
         )}
       </Card>
 
-      <Modal open={showForm} onClose={resetForm} title={editingId ? "Editar cliente" : "Nuevo cliente"}>
+      <Modal
+        open={showForm}
+        onClose={resetForm}
+        title={editingId ? "Editar cliente" : "Nuevo cliente"}
+      >
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
           <div>
             <FieldLabel>Nombre</FieldLabel>
-            <TextInput required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+            <TextInput
+              required
+              value={form.firstName}
+              onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+            />
           </div>
           <div>
             <FieldLabel>Apellido</FieldLabel>
-            <TextInput required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+            <TextInput
+              required
+              value={form.lastName}
+              onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+            />
           </div>
           <div className="col-span-2">
             <FieldLabel>Dirección de entrega</FieldLabel>
@@ -148,18 +206,30 @@ export function CustomersPage() {
           </div>
           <div>
             <FieldLabel>Celular</FieldLabel>
-            <TextInput value={form.mobilePhone ?? ""} onChange={(e) => setForm({ ...form, mobilePhone: e.target.value })} />
+            <TextInput
+              value={form.mobilePhone ?? ""}
+              onChange={(e) => setForm({ ...form, mobilePhone: e.target.value })}
+            />
           </div>
           <div>
             <FieldLabel>Teléfono</FieldLabel>
-            <TextInput value={form.phone ?? ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <TextInput
+              value={form.phone ?? ""}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
           </div>
           <div className="col-span-2">
             <FieldLabel>Email</FieldLabel>
-            <TextInput value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <TextInput
+              value={form.email ?? ""}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
           </div>
           <div className="col-span-2 flex gap-2">
-            <PrimaryButton type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+            <PrimaryButton
+              type="submit"
+              disabled={createMutation.isPending || updateMutation.isPending}
+            >
               {editingId ? "Guardar cambios" : "Crear cliente"}
             </PrimaryButton>
             <SecondaryButton type="button" onClick={resetForm}>

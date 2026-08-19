@@ -1,4 +1,11 @@
-import { ButtonHTMLAttributes, InputHTMLAttributes, LabelHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  LabelHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from "react";
 
 export function PageHeader({ title, actions }: { title: ReactNode; actions?: ReactNode }) {
   return (
@@ -100,9 +107,17 @@ const BADGE_TONE: Record<string, string> = {
   red: "bg-red-500/10 text-red-700",
 };
 
-export function Badge({ children, tone = "slate" }: { children: ReactNode; tone?: "slate" | "green" | "amber" | "red" }) {
+export function Badge({
+  children,
+  tone = "slate",
+}: {
+  children: ReactNode;
+  tone?: "slate" | "green" | "amber" | "red";
+}) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 text-xs font-medium ${BADGE_TONE[tone]}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-sm px-2 py-0.5 text-xs font-medium ${BADGE_TONE[tone]}`}
+    >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
       {children}
     </span>

@@ -23,7 +23,12 @@ export class ReactPdfRenderer implements PdfRenderer {
     const sketches = await this.resolveSketches(order);
     const referencePhotos = await this.resolveReferencePhotos(order);
     return renderToBuffer(
-      <FactorySheetDocument order={order} customer={customer} sketches={sketches} referencePhotos={referencePhotos} />
+      <FactorySheetDocument
+        order={order}
+        customer={customer}
+        sketches={sketches}
+        referencePhotos={referencePhotos}
+      />
     );
   }
 

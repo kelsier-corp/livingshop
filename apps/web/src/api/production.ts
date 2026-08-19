@@ -4,9 +4,12 @@ import { OrderItemWithContext, PageResult, ProductionStage, ProductionStageStatu
 export interface ProductionListParams {
   page: number;
   pageSize: number;
+  deliveryDate?: string;
 }
 
-export function fetchProductionBoard(params: ProductionListParams): Promise<PageResult<OrderItemWithContext>> {
+export function fetchProductionBoard(
+  params: ProductionListParams
+): Promise<PageResult<OrderItemWithContext>> {
   return apiGet<PageResult<OrderItemWithContext>>(`/production/board${toQueryString(params)}`);
 }
 

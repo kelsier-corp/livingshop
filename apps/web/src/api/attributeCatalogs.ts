@@ -1,12 +1,21 @@
-import { apiDelete, apiGet, apiPost, apiPut } from "./client";
-import { AttributeCatalog, AttributeCatalogValue } from "./types";
+import { apiDelete, apiGet, apiPost, apiPut, toQueryString } from "./client";
+import { AttributeCatalog, AttributeCatalogValue, PageResult } from "./types";
 
-export function fetchAttributeCatalogs(): Promise<AttributeCatalog[]> {
-  return apiGet<AttributeCatalog[]>("/attribute-catalogs");
+export interface AttributeCatalogListParams {
+  page: number;
+  pageSize: number;
 }
 
-export function createAttributeCatalog(name: string): Promise<AttributeCatalog> {
-  return apiPost<AttributeCatalog>("/attribute-catalogs", { name });
+export function fetchAttributeCatalogs(params: AttributeCatalogListParams): Promise<PageResult<AttributeCatalog>> {
+  return apiGet<PageResult<AttributeCatalog>>(`/attribute-catalogs${toQueryString(params)}`);
+}
+
+export function fetchAllAttributeCatalogs(): Promise<AttributeCatalog[]> {
+  return apiGet<AttributeCatalog[]>("/attribute-catalogs/all");
+}
+
+export function createAttributeCatalog(name: string, values: string[]): Promise<AttributeCatalog> {
+  return apiPost<AttributeCatalog>("/attribute-catalogs", { name, values });
 }
 
 export function deleteAttributeCatalog(id: string): Promise<void> {

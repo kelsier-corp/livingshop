@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ProductCategory } from "@/api/types";
+import { normalizeForSearch } from "@/utils/text";
 import { TextInput } from "./ui";
 
 interface Props {
@@ -19,22 +20,25 @@ export function CategoryFilterSelect({ categories, selectedId, onChange, topN = 
   const [open, setOpen] = useState(false);
 
   const selected = categories.find((category) => category.id === selectedId);
-  const term = query.trim().toLowerCase();
+  const term = normalizeForSearch(query.trim());
   const candidates = term
-    ? categories.filter((category) => category.name.toLowerCase().includes(term)).slice(0, VISIBLE_LIMIT)
+    ? categories
+        .filter((category) => normalizeForSearch(category.name).includes(term))
+        .slice(0, VISIBLE_LIMIT)
     : [...categories].sort((a, b) => b.productCount - a.productCount).slice(0, topN);
 
   function pick(id: string) {
     onChange(id);
     setQuery("");
     setOpen(false);
+    (document.activeElement as HTMLElement | null)?.blur();
   }
 
   return (
     <div className="relative">
       <TextInput
-        placeholder={selected ? selected.name : "Todas las categorías"}
-        value={open ? query : ""}
+        placeholder="Todas las categorías"
+        value={open ? query : (selected?.name ?? "")}
         onFocus={() => {
           setOpen(true);
           setQuery("");
@@ -64,10 +68,13 @@ export function CategoryFilterSelect({ categories, selectedId, onChange, topN = 
               <span className="text-xs text-ink-soft">{category.productCount} productos</span>
             </button>
           ))}
-          {candidates.length === 0 && <p className="px-3 py-2 text-sm text-ink-soft">Sin coincidencias.</p>}
+          {candidates.length === 0 && (
+            <p className="px-3 py-2 text-sm text-ink-soft">Sin coincidencias.</p>
+          )}
           {!term && categories.length > candidates.length && (
             <p className="px-3 py-2 text-xs text-ink-soft/70">
-              Mostrando las {candidates.length} categorías con más productos — escribí para buscar el resto.
+              Mostrando las {candidates.length} categorías con más productos — escribí para buscar
+              el resto.
             </p>
           )}
         </div>

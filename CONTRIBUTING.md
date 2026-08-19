@@ -4,14 +4,14 @@ Esta guía explica cómo trabajamos en este repositorio: qué ramas existen, có
 
 ## Ramas
 
-| Rama | Para qué sirve | Se parte desde | Recibe merges de |
-|---|---|---|---|
-| `main` | **Intocable.** Es lo que está en producción. | — | Solo `release/*` (vía PR) |
-| `develop` | Rama de integración. Todo lo que se viene desarrollando vive acá. | `main` (ya existe, no la recrees) | `feature/*`, `backport/*` (vía PR) |
-| `feature/xx-xx` | Una feature nueva. | `develop` | — |
-| `release/xx` | Un release en preparación, listo para salir a producción. | `develop` | `fixes/xx-xx` (directo, sin PR intermedio a develop) |
-| `fixes/xx-xx` | Un arreglo puntual sobre un release ya cortado (ej. algo que encontró QA). | `release/xx` | — |
-| `backport/...` | Generada automáticamente por CI para traer a `develop` lo que se arregló en un `release/*`. | `develop` | — |
+| Rama            | Para qué sirve                                                                              | Se parte desde                    | Recibe merges de                                     |
+| --------------- | ------------------------------------------------------------------------------------------- | --------------------------------- | ---------------------------------------------------- |
+| `main`          | **Intocable.** Es lo que está en producción.                                                | —                                 | Solo `release/*` (vía PR)                            |
+| `develop`       | Rama de integración. Todo lo que se viene desarrollando vive acá.                           | `main` (ya existe, no la recrees) | `feature/*`, `backport/*` (vía PR)                   |
+| `feature/xx-xx` | Una feature nueva.                                                                          | `develop`                         | —                                                    |
+| `release/xx`    | Un release en preparación, listo para salir a producción.                                   | `develop`                         | `fixes/xx-xx` (directo, sin PR intermedio a develop) |
+| `fixes/xx-xx`   | Un arreglo puntual sobre un release ya cortado (ej. algo que encontró QA).                  | `release/xx`                      | —                                                    |
+| `backport/...`  | Generada automáticamente por CI para traer a `develop` lo que se arregló en un `release/*`. | `develop`                         | —                                                    |
 
 Nada de esto se pushea directo a `main` ni a `develop` — todo entra por PR, con al menos 1 aprobación.
 

@@ -12,9 +12,10 @@ export const attributeDefinitionInputSchema = z.object({
 export const productTypeInputSchema = z.object({
   name: z.string().trim().min(1),
   description: z.string().trim().optional().nullable(),
-  basePrice: z.number().nonnegative(),
+  basePrice: z.number().positive(),
   categoryIds: z.array(z.string().uuid()).default([]),
   active: z.boolean().optional(),
+  includeInFactorySheet: z.boolean().optional(),
   attributeDefinitions: z.array(attributeDefinitionInputSchema),
 });
 
@@ -22,7 +23,11 @@ export const productTypeListQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().positive().max(100).default(20),
   search: z.string().trim().optional(),
-  categoryId: z.string().uuid().optional(),
+  categoryIds: z
+    .string()
+    .optional()
+    .transform((value) => (value ? value.split(",") : undefined))
+    .pipe(z.array(z.string().uuid()).optional()),
 });
 
 export const productCategoryListQuerySchema = z.object({
@@ -35,7 +40,7 @@ export const bulkPriceInputSchema = z.object({
   prices: z.array(
     z.object({
       id: z.string().uuid(),
-      basePrice: z.number().nonnegative(),
+      basePrice: z.number().positive(),
     })
   ),
 });
@@ -50,7 +55,17 @@ export const productCategoryInputSchema = z.object({
   name: z.string().trim().min(1),
 });
 
-export const attributeCatalogInputSchema = z.object({
+export const attributeCatalogListQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().positive().max(100).default(20),
+});
+
+export const attributeCatalogCreateSchema = z.object({
+  name: z.string().trim().min(1),
+  values: z.array(z.string().trim().min(1)).min(1),
+});
+
+export const attributeCatalogUpdateSchema = z.object({
   name: z.string().trim().min(1),
 });
 
