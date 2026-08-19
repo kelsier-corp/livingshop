@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { ProductionService } from "@application/production/ProductionService";
+import { toFactoryProductionItemView } from "@domain/policies/factoryView";
 import { ProductionStage } from "@domain/entities/enums";
 import {
   productionListQuerySchema,
@@ -11,8 +12,13 @@ export class ProductionController {
   constructor(private readonly productionService: ProductionService) {}
 
   board = async (req: Request, res: Response): Promise<void> => {
+    const isFactory = req.currentUser?.role === "factory";
     const query = productionListQuerySchema.parse(req.query);
-    res.json(await this.productionService.listBoard(query));
+    const page = await this.productionService.listBoard(query);
+    res.json({
+      ...page,
+      items: isFactory ? page.items.map(toFactoryProductionItemView) : page.items,
+    });
   };
 
   toggleStage = async (req: Request, res: Response): Promise<void> => {

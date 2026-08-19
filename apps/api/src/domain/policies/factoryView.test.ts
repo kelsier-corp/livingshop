@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Order, OrderItem } from "../entities/Order";
-import { toFactoryOrderView } from "./factoryView";
+import { OrderItemWithContext } from "../entities/Production";
+import { toFactoryOrderView, toFactoryProductionItemView } from "./factoryView";
 
 function buildItem(overrides: Partial<OrderItem> = {}): OrderItem {
   return {
@@ -70,6 +71,36 @@ describe("toFactoryOrderView", () => {
       productTypeId: item.productTypeId,
       quantity: item.quantity,
       factoryNotes: "Reforzar patas",
+    });
+  });
+});
+
+function buildItemWithContext(overrides: Partial<OrderItemWithContext> = {}): OrderItemWithContext {
+  return {
+    ...buildItem(),
+    orderNumber: 1,
+    orderDate: new Date("2026-01-01"),
+    orderStatus: "confirmed",
+    customerFullName: "Ana Test",
+    ...overrides,
+  };
+}
+
+describe("toFactoryProductionItemView", () => {
+  it("strips unitPrice and totalPrice", () => {
+    const view = toFactoryProductionItemView(buildItemWithContext());
+    expect(view).not.toHaveProperty("unitPrice");
+    expect(view).not.toHaveProperty("totalPrice");
+  });
+
+  it("keeps the production-board context fields (order number, status, customer)", () => {
+    const view = toFactoryProductionItemView(
+      buildItemWithContext({ orderNumber: 42, orderStatus: "in_production" })
+    );
+    expect(view).toMatchObject({
+      orderNumber: 42,
+      orderStatus: "in_production",
+      customerFullName: "Ana Test",
     });
   });
 });
