@@ -5,12 +5,16 @@ import { fetchAllAttributeCatalogs } from "@/api/attributeCatalogs";
 import { OrderInput, createOrder } from "@/api/orders";
 import { fetchAllProductCategories } from "@/api/productCategories";
 import { fetchAllProductTypes } from "@/api/productTypes";
-import { AttributeValues, ProductType } from "@/api/types";
+import { ProductType } from "@/api/types";
 import { useCurrentUser } from "@/auth/CurrentUserContext";
-import { CatalogValueSelect } from "@/components/CatalogValueSelect";
 import { Collapsible } from "@/components/Collapsible";
 import { CustomerPicker } from "@/components/CustomerPicker";
-import { ProductTypePicker } from "@/components/ProductTypePicker";
+import {
+  OrderItemDraft,
+  OrderItemFields,
+  buildItemAttributes,
+  emptyOrderItemDraft,
+} from "@/components/OrderItemFields";
 import {
   Card,
   FieldLabel,
@@ -20,21 +24,10 @@ import {
   TextArea,
   TextInput,
 } from "@/components/ui";
-import { isNumericInput, respectsMinimum } from "@/utils/number";
 
-interface CustomAttribute {
+// The React key has to survive reordering, so it lives alongside the draft rather than inside it.
+interface ItemDraft extends OrderItemDraft {
   key: string;
-  value: string;
-}
-
-interface ItemDraft {
-  key: string;
-  productTypeId: string;
-  quantity: number;
-  deliveryDate: string;
-  attributeValues: Record<string, string>;
-  customAttributes: CustomAttribute[];
-  factoryNotes: string;
 }
 
 function today(): string {
@@ -42,23 +35,7 @@ function today(): string {
 }
 
 function emptyItem(deliveryDate: string): ItemDraft {
-  return {
-    key: crypto.randomUUID(),
-    productTypeId: "",
-    quantity: 1,
-    deliveryDate,
-    attributeValues: {},
-    customAttributes: [],
-    factoryNotes: "",
-  };
-}
-
-function buildAttributes(item: ItemDraft): AttributeValues {
-  const attributes: AttributeValues = { ...item.attributeValues };
-  for (const custom of item.customAttributes) {
-    if (custom.key.trim()) attributes[custom.key.trim()] = custom.value;
-  }
-  return attributes;
+  return { key: crypto.randomUUID(), ...emptyOrderItemDraft(deliveryDate) };
 }
 
 function formatCurrency(value: number): string {
@@ -104,41 +81,12 @@ export function OrderFormPage() {
     setItems(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   }
 
-  function handleSelectProductType(index: number, productTypeId: string) {
-    updateItem(index, { productTypeId, attributeValues: {} });
-  }
-
   function addItem() {
     setItems([...items, emptyItem(sameDateForAll ? sharedDeliveryDate : today())]);
   }
 
   function removeItem(index: number) {
     setItems(items.filter((_, i) => i !== index));
-  }
-
-  function addCustomAttribute(index: number) {
-    updateItem(index, {
-      customAttributes: [...items[index].customAttributes, { key: "", value: "" }],
-    });
-  }
-
-  function updateCustomAttribute(
-    itemIndex: number,
-    attrIndex: number,
-    patch: Partial<CustomAttribute>
-  ) {
-    const item = items[itemIndex];
-    const customAttributes = item.customAttributes.map((attr, i) =>
-      i === attrIndex ? { ...attr, ...patch } : attr
-    );
-    updateItem(itemIndex, { customAttributes });
-  }
-
-  function removeCustomAttribute(itemIndex: number, attrIndex: number) {
-    const item = items[itemIndex];
-    updateItem(itemIndex, {
-      customAttributes: item.customAttributes.filter((_, i) => i !== attrIndex),
-    });
   }
 
   function handleSubmit(e: FormEvent) {
@@ -153,7 +101,7 @@ export function OrderFormPage() {
         productTypeId: item.productTypeId,
         quantity: item.quantity,
         deliveryDate: sameDateForAll ? sharedDeliveryDate : item.deliveryDate,
-        attributes: buildAttributes(item),
+        attributes: buildItemAttributes(item),
         factoryNotes: item.factoryNotes || null,
       })),
     };
@@ -219,152 +167,14 @@ export function OrderFormPage() {
                   )
                 }
               >
-                <div>
-                  <FieldLabel>Producto</FieldLabel>
-                  <ProductTypePicker
-                    productTypes={productTypes}
-                    categories={productCategories}
-                    selectedProductTypeId={item.productTypeId}
-                    onSelect={(productTypeId) => handleSelectProductType(index, productTypeId)}
-                  />
-                </div>
-
-                <div className="mt-4 grid grid-cols-3 gap-4">
-                  <div>
-                    <FieldLabel>Cantidad</FieldLabel>
-                    <TextInput
-                      type="text"
-                      inputMode="numeric"
-                      required
-                      value={item.quantity}
-                      onChange={(e) => {
-                        if (
-                          isNumericInput(e.target.value, { allowDecimal: false }) &&
-                          respectsMinimum(e.target.value, 1)
-                        ) {
-                          updateItem(index, { quantity: Number(e.target.value) });
-                        }
-                      }}
-                    />
-                  </div>
-
-                  {!sameDateForAll && (
-                    <div>
-                      <FieldLabel>Fecha de entrega</FieldLabel>
-                      <TextInput
-                        type="date"
-                        required
-                        value={item.deliveryDate}
-                        onChange={(e) => updateItem(index, { deliveryDate: e.target.value })}
-                      />
-                    </div>
-                  )}
-                  {productType && (
-                    <div>
-                      <FieldLabel>Precio unitario</FieldLabel>
-                      <p className="pt-1.5 font-mono text-sm text-ink">
-                        {formatCurrency(productType.basePrice)}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {productType && productType.attributeDefinitions.length > 0 && (
-                  <div className="mt-4 grid grid-cols-3 gap-4">
-                    {productType.attributeDefinitions.map((attribute) => (
-                      <div key={attribute.id}>
-                        <FieldLabel>
-                          {attribute.name}
-                          {attribute.required ? " *" : ""}
-                        </FieldLabel>
-                        {attribute.dataType === "catalog" ? (
-                          <CatalogValueSelect
-                            required={attribute.required}
-                            values={
-                              attributeCatalogs.find(
-                                (catalog) => catalog.id === attribute.attributeCatalogId
-                              )?.values ?? []
-                            }
-                            value={item.attributeValues[attribute.name] ?? ""}
-                            onChange={(value) =>
-                              updateItem(index, {
-                                attributeValues: {
-                                  ...item.attributeValues,
-                                  [attribute.name]: value,
-                                },
-                              })
-                            }
-                          />
-                        ) : (
-                          <TextInput
-                            required={attribute.required}
-                            value={item.attributeValues[attribute.name] ?? ""}
-                            onChange={(e) =>
-                              updateItem(index, {
-                                attributeValues: {
-                                  ...item.attributeValues,
-                                  [attribute.name]: e.target.value,
-                                },
-                              })
-                            }
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <FieldLabel className="mb-0">
-                      Campos personalizados para este producto
-                    </FieldLabel>
-                    <SecondaryButton type="button" onClick={() => addCustomAttribute(index)}>
-                      Agregar campo
-                    </SecondaryButton>
-                  </div>
-                  <div className="space-y-2">
-                    {item.customAttributes.map((custom, attrIndex) => (
-                      <div key={attrIndex} className="grid grid-cols-12 gap-2">
-                        <div className="col-span-4">
-                          <TextInput
-                            placeholder="Nombre del campo"
-                            value={custom.key}
-                            onChange={(e) =>
-                              updateCustomAttribute(index, attrIndex, { key: e.target.value })
-                            }
-                          />
-                        </div>
-                        <div className="col-span-7">
-                          <TextInput
-                            placeholder="Valor"
-                            value={custom.value}
-                            onChange={(e) =>
-                              updateCustomAttribute(index, attrIndex, { value: e.target.value })
-                            }
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          className="col-span-1 text-xs text-signal hover:underline"
-                          onClick={() => removeCustomAttribute(index, attrIndex)}
-                        >
-                          quitar
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <FieldLabel>Comentarios para fábrica</FieldLabel>
-                  <TextArea
-                    rows={2}
-                    placeholder="Cualquier especificación que necesite saber fábrica sobre este producto"
-                    value={item.factoryNotes}
-                    onChange={(e) => updateItem(index, { factoryNotes: e.target.value })}
-                  />
-                </div>
+                <OrderItemFields
+                  draft={item}
+                  productTypes={productTypes}
+                  categories={productCategories}
+                  attributeCatalogs={attributeCatalogs}
+                  showDeliveryDate={!sameDateForAll}
+                  onChange={(patch) => updateItem(index, patch)}
+                />
               </Collapsible>
             </Card>
           );

@@ -16,6 +16,7 @@ function buildItem(overrides: Partial<OrderItem> = {}): OrderItem {
     deliveryDate: new Date("2026-02-01"),
     attributes: {},
     factoryNotes: null,
+    active: true,
     attachments: [],
     productionStages: [],
     ...overrides,

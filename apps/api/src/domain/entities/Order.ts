@@ -32,6 +32,9 @@ export interface OrderItem {
   deliveryDate: Date;
   attributes: AttributeValues;
   factoryNotes: string | null;
+  // False once the item was taken off the order. Read paths filter these out, so an inactive item
+  // only ever surfaces through findItemById — see the OrderItem.active comment in schema.prisma.
+  active: boolean;
   attachments: Attachment[];
   productionStages: ProductionStageStatus[];
 }

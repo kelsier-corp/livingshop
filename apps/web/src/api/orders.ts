@@ -43,11 +43,37 @@ export function updateOrderStatus(id: string, status: OrderStatus): Promise<Orde
   return apiPatch<Order>(`/orders/${id}/status`, { status });
 }
 
-export function addPayment(
+export function addOrderItem(orderId: string, input: OrderItemInput): Promise<Order> {
+  return apiPost<Order>(`/orders/${orderId}/items`, input);
+}
+
+// Taking a product off an order is an update of its active flag, not a delete — the item keeps the
+// price it was sold at. Passing active: true puts it back on the order.
+export function setOrderItemActive(
   orderId: string,
-  input: { amount: number; method: string; feePct?: number | null; note?: string | null }
-): Promise<Payment> {
+  itemId: string,
+  active: boolean
+): Promise<Order> {
+  return apiPatch<Order>(`/orders/${orderId}/items/${itemId}`, { active });
+}
+
+export interface PaymentInput {
+  amount: number;
+  method: string;
+  feePct?: number | null;
+  note?: string | null;
+}
+
+export function addPayment(orderId: string, input: PaymentInput): Promise<Payment> {
   return apiPost<Payment>(`/orders/${orderId}/payments`, input);
+}
+
+export function updatePayment(
+  orderId: string,
+  paymentId: string,
+  input: PaymentInput
+): Promise<Payment> {
+  return apiPatch<Payment>(`/orders/${orderId}/payments/${paymentId}`, input);
 }
 
 export function uploadAttachment(

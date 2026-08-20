@@ -7,6 +7,8 @@ import { param } from "../utils/param";
 import {
   attachmentTypeInputSchema,
   orderInputSchema,
+  orderItemActiveInputSchema,
+  orderItemInputSchema,
   orderListQuerySchema,
   orderStatusInputSchema,
   paymentInputSchema,
@@ -50,9 +52,35 @@ export class OrdersController {
     res.json(toResponseOrder(order, isFactory));
   };
 
+  addItem = async (req: Request, res: Response): Promise<void> => {
+    const input = orderItemInputSchema.parse(req.body);
+    const order = await this.orderService.addItem(param(req, "id"), input);
+    res.status(201).json(toResponseOrder(order, false));
+  };
+
+  setItemActive = async (req: Request, res: Response): Promise<void> => {
+    const { active } = orderItemActiveInputSchema.parse(req.body);
+    const order = await this.orderService.setItemActive(
+      param(req, "id"),
+      param(req, "itemId"),
+      active
+    );
+    res.json(toResponseOrder(order, false));
+  };
+
   addPayment = async (req: Request, res: Response): Promise<void> => {
     const input = paymentInputSchema.parse(req.body);
     res.status(201).json(await this.orderService.addPayment(param(req, "id"), input));
+  };
+
+  updatePayment = async (req: Request, res: Response): Promise<void> => {
+    const input = paymentInputSchema.parse(req.body);
+    const payment = await this.orderService.updatePayment(
+      param(req, "id"),
+      param(req, "paymentId"),
+      input
+    );
+    res.json(payment);
   };
 
   addAttachment = async (req: Request, res: Response): Promise<void> => {

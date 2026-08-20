@@ -5,6 +5,7 @@ import {
   Order,
   OrderCreateData,
   OrderItem,
+  OrderItemCreateData,
   OrderListQuery,
   Payment,
   PaymentInput,
@@ -17,9 +18,14 @@ import { SalesListQuery, SalesRow } from "@domain/entities/Sales";
 import { OrderStatus } from "@domain/entities/enums";
 import { findIdsByUnaccentedSearch } from "./accentInsensitiveSearch";
 
+// Items taken off the order (active: false) are filtered out of every read path, so totals, PDFs
+// and the factory board all behave as if the row were gone — see OrderItem.active in schema.prisma.
+// The explicit orderBy keeps the list stable once an item is appended after creation.
 const orderInclude = {
   customer: true,
   items: {
+    where: { active: true },
+    orderBy: { createdAt: "asc" },
     include: {
       productType: true,
       attachments: true,
@@ -27,7 +33,7 @@ const orderInclude = {
     },
   },
   payments: true,
-};
+} satisfies Prisma.OrderInclude;
 
 type OrderRow = Prisma.OrderGetPayload<{ include: typeof orderInclude }>;
 type OrderItemRow = OrderRow["items"][number];
@@ -43,9 +49,9 @@ type ProductionItemRow = Prisma.OrderItemGetPayload<{ include: typeof production
 
 const salesRowInclude = {
   customer: true,
-  items: { include: { productType: true } },
+  items: { where: { active: true }, include: { productType: true } },
   payments: true,
-};
+} satisfies Prisma.OrderInclude;
 
 type SalesOrderRow = Prisma.OrderGetPayload<{ include: typeof salesRowInclude }>;
 
@@ -190,10 +196,68 @@ export class PrismaOrderRepository implements OrderRepository {
     return toOrderDomain(row);
   }
 
+  async addItem(orderId: string, data: OrderItemCreateData): Promise<Order> {
+    const row = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        items: {
+          create: {
+            productTypeId: data.productTypeId,
+            quantity: data.quantity,
+            unitPrice: data.unitPrice,
+            totalPrice: data.totalPrice,
+            deliveryDate: data.deliveryDate,
+            attributes: data.attributes as Prisma.InputJsonValue,
+            factoryNotes: data.factoryNotes ?? null,
+          },
+        },
+      },
+      include: orderInclude,
+    });
+    return toOrderDomain(row);
+  }
+
+  // A soft removal: the row keeps its price snapshot and stays reachable through findItemById,
+  // it just stops being included in the order. Reactivating is the same call with active: true.
+  async setItemActive(orderId: string, itemId: string, active: boolean): Promise<Order> {
+    await this.prisma.orderItem.update({ where: { id: itemId }, data: { active } });
+    const row = await this.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      include: orderInclude,
+    });
+    return toOrderDomain(row);
+  }
+
+  async findItemById(id: string): Promise<OrderItem | null> {
+    const row = await this.prisma.orderItem.findUnique({
+      where: { id },
+      include: { productType: true, attachments: true, productionStages: true },
+    });
+    return row ? toOrderItemDomain(row) : null;
+  }
+
   async addPayment(orderId: string, input: PaymentInput): Promise<Payment> {
     const row = await this.prisma.payment.create({
       data: {
         orderId,
+        amount: input.amount,
+        method: input.method,
+        feePct: input.feePct ?? null,
+        note: input.note ?? null,
+      },
+    });
+    return toPaymentDomain(row);
+  }
+
+  async findPaymentById(id: string): Promise<Payment | null> {
+    const row = await this.prisma.payment.findUnique({ where: { id } });
+    return row ? toPaymentDomain(row) : null;
+  }
+
+  async updatePayment(id: string, input: PaymentInput): Promise<Payment> {
+    const row = await this.prisma.payment.update({
+      where: { id },
+      data: {
         amount: input.amount,
         method: input.method,
         feePct: input.feePct ?? null,
@@ -243,6 +307,7 @@ export class PrismaOrderRepository implements OrderRepository {
     query: ProductionListQuery
   ): Promise<PageResult<OrderItemWithContext>> {
     const where: Prisma.OrderItemWhereInput = {
+      active: true,
       order: {
         status: { in: ["confirmed", "in_production"] },
         ...(query.number !== undefined ? { number: query.number } : {}),
@@ -278,7 +343,7 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async listAllItemsWithContext(): Promise<OrderItemWithContext[]> {
     const rows = await this.prisma.orderItem.findMany({
-      where: { order: { status: { in: ["confirmed", "in_production"] } } },
+      where: { active: true, order: { status: { in: ["confirmed", "in_production"] } } },
       include: productionItemInclude,
       orderBy: [{ deliveryDate: "asc" }, { createdAt: "asc" }],
     });
@@ -384,6 +449,7 @@ function toOrderItemDomain(row: OrderItemRow): OrderItem {
     deliveryDate: row.deliveryDate,
     attributes: row.attributes as OrderItem["attributes"],
     factoryNotes: row.factoryNotes,
+    active: row.active,
     attachments: row.attachments.map(toAttachmentDomain),
     productionStages: row.productionStages.map(toStageDomain),
   };
