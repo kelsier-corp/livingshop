@@ -103,6 +103,13 @@ export class PrismaOrderRepository implements OrderRepository {
   // "earliest delivery date across an order's items" needs a raw query: fetch the sorted/paged
   // ids first, then load the full Order objects (with their usual includes) and re-apply that
   // order, since `findMany({ where: { id: { in } } })` doesn't preserve the input array's order.
+  //
+  // The active filter belongs in the join's ON clause, not in WHERE: as a WHERE predicate it
+  // would turn the LEFT JOIN into an inner one and drop orders whose every item was removed,
+  // while the count query above (which doesn't touch order_items) would still count them —
+  // short pages and a total that never agrees with them. In the ON clause those orders survive
+  // with MIN(...) = NULL and land at the end via NULLS LAST, matching orderInclude, where an
+  // order with no active items still loads, just with an empty items array.
   private async listSortedByDeliveryDate(query: OrderListQuery): Promise<PageResult<Order>> {
     const direction = query.sortDirection === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
     const conditions: Prisma.Sql[] = [];
@@ -130,7 +137,7 @@ export class PrismaOrderRepository implements OrderRepository {
       SELECT o.id
       FROM orders o
       JOIN customers c ON c.id = o."customerId"
-      LEFT JOIN order_items oi ON oi."orderId" = o.id
+      LEFT JOIN order_items oi ON oi."orderId" = o.id AND oi.active = true
       ${whereSql}
       GROUP BY o.id
       ORDER BY MIN(oi."deliveryDate") ${direction} NULLS LAST
