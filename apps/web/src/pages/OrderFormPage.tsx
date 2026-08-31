@@ -267,6 +267,14 @@ export function OrderFormPage() {
           );
         })}
 
+        {createMutation.isError && (
+          <p className="text-sm text-signal">
+            {createMutation.error instanceof Error
+              ? createMutation.error.message
+              : "No se pudo crear la orden."}
+          </p>
+        )}
+
         <div className="flex items-center justify-between">
           <SecondaryButton type="button" onClick={addItem}>
             Agregar otro producto
