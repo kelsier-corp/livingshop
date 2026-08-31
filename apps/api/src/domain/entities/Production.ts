@@ -12,4 +12,5 @@ export interface ProductionListQuery {
   page: number;
   pageSize: number;
   deliveryDate?: Date;
+  number?: number;
 }

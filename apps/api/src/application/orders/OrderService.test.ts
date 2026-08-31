@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Customer } from "@domain/entities/Customer";
-import { OrderInput, OrderItemInput } from "@domain/entities/Order";
+import { Order, OrderInput, OrderItemInput } from "@domain/entities/Order";
 import { ProductType } from "@domain/entities/Catalog";
 import { User } from "@domain/entities/User";
-import { NotFoundError, ValidationError } from "@domain/errors/DomainError";
+import { ForbiddenError, NotFoundError, ValidationError } from "@domain/errors/DomainError";
 import { CustomerRepository } from "@domain/repositories/CustomerRepository";
 import { ProductTypeRepository } from "@domain/repositories/CatalogRepository";
 import { OrderRepository } from "@domain/repositories/OrderRepository";
@@ -61,6 +61,23 @@ function buildOrderInput(overrides: Partial<OrderInput> = {}): OrderInput {
     customerId: "customer-1",
     salespersonId: "user-1",
     items: [buildItemInput()],
+    ...overrides,
+  };
+}
+
+function buildOrder(overrides: Partial<Order> = {}): Order {
+  return {
+    id: "order-1",
+    number: 1,
+    date: new Date("2026-01-01"),
+    printedAt: null,
+    customerId: "customer-1",
+    customerFullName: "Ana Gómez",
+    salespersonId: "user-1",
+    status: "confirmed",
+    notes: null,
+    items: [],
+    payments: [],
     ...overrides,
   };
 }
@@ -241,5 +258,60 @@ describe("OrderService.addPayment", () => {
     await expect(
       service.addPayment("missing", { amount: 100, method: "Efectivo" })
     ).rejects.toThrow(NotFoundError);
+  });
+});
+
+describe("OrderService.updateStatus", () => {
+  it("404s when the order doesn't exist", async () => {
+    const { service, orderRepository } = buildService();
+    orderRepository.findById = vi.fn(async () => null);
+    await expect(service.updateStatus("missing", "confirmed", "admin")).rejects.toThrow(
+      NotFoundError
+    );
+  });
+
+  it("lets admin set any status, including ones outside the factory's range", async () => {
+    const { service, orderRepository } = buildService();
+    orderRepository.findById = vi.fn(async () => buildOrder({ status: "confirmed" }));
+    await service.updateStatus("order-1", "delivered", "admin");
+    expect(orderRepository.updateStatus).toHaveBeenCalledWith("order-1", "delivered");
+  });
+
+  it("lets sales set any status too, since sales already manages the full order lifecycle", async () => {
+    const { service, orderRepository } = buildService();
+    orderRepository.findById = vi.fn(async () => buildOrder({ status: "confirmed" }));
+    await service.updateStatus("order-1", "in_production", "sales");
+    expect(orderRepository.updateStatus).toHaveBeenCalledWith("order-1", "in_production");
+  });
+
+  it("lets factory move a confirmed order into in_production", async () => {
+    const { service, orderRepository } = buildService();
+    orderRepository.findById = vi.fn(async () => buildOrder({ status: "confirmed" }));
+    await service.updateStatus("order-1", "in_production", "factory");
+    expect(orderRepository.updateStatus).toHaveBeenCalledWith("order-1", "in_production");
+  });
+
+  it("lets factory move an order back from in_production to confirmed", async () => {
+    const { service, orderRepository } = buildService();
+    orderRepository.findById = vi.fn(async () => buildOrder({ status: "in_production" }));
+    await service.updateStatus("order-1", "confirmed", "factory");
+    expect(orderRepository.updateStatus).toHaveBeenCalledWith("order-1", "confirmed");
+  });
+
+  it("blocks factory from setting a status outside confirmed/in_production", async () => {
+    const { service, orderRepository } = buildService();
+    orderRepository.findById = vi.fn(async () => buildOrder({ status: "confirmed" }));
+    await expect(service.updateStatus("order-1", "delivered", "factory")).rejects.toThrow(
+      ForbiddenError
+    );
+    expect(orderRepository.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it("blocks factory from touching an order that isn't confirmed or in_production yet", async () => {
+    const { service, orderRepository } = buildService();
+    orderRepository.findById = vi.fn(async () => buildOrder({ status: "draft" }));
+    await expect(service.updateStatus("order-1", "confirmed", "factory")).rejects.toThrow(
+      ForbiddenError
+    );
   });
 });
