@@ -430,6 +430,7 @@ function toOrderItemWithContext(row: ProductionItemRow): OrderItemWithContext {
     orderDate: row.order.date,
     orderStatus: row.order.status as OrderStatus,
     customerFullName: `${row.order.customer.firstName} ${row.order.customer.lastName}`,
+    needsReprint: row.order.printedAt !== null && row.updatedAt > row.order.printedAt,
   };
 }
 

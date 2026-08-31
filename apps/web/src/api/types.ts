@@ -167,6 +167,7 @@ export interface OrderItemWithContext extends OrderItem {
   orderDate: string;
   orderStatus: OrderStatus;
   customerFullName: string;
+  needsReprint: boolean;
 }
 
 export interface SalesRowItem {

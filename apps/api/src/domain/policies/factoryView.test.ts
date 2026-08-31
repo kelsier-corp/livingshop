@@ -30,6 +30,7 @@ function buildItemWithContext(overrides: Partial<OrderItemWithContext> = {}): Or
     orderDate: new Date("2026-01-01"),
     orderStatus: "draft",
     customerFullName: "Ana Test",
+    needsReprint: false,
     ...overrides,
   };
 }

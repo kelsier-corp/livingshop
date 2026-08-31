@@ -73,7 +73,19 @@ export function ProductionPage() {
       header: "Producto",
       width: "30%",
       truncate: true,
-      render: (row) => <span className="font-medium text-ink">{row.productTypeName}</span>,
+      render: (row) => (
+        <span className="font-medium text-ink">
+          {row.productTypeName}
+          {row.needsReprint && (
+            <span
+              className="ml-2 rounded-sm bg-signal/10 px-1.5 py-0.5 text-[10px] font-medium text-signal"
+              title="Se editó después de la última impresión de la ficha técnica"
+            >
+              editado
+            </span>
+          )}
+        </span>
+      ),
     },
     { key: "qty", header: "Cant.", width: "6%", render: (row) => row.quantity },
     {
@@ -108,6 +120,14 @@ export function ProductionPage() {
           >
             {expandedRowId === row.id ? "Ocultar progreso" : "Ver progreso"}
           </SecondaryButton>
+          {row.needsReprint && (
+            <span
+              className="text-base text-signal"
+              title="Se editó después de la última impresión — conviene reimprimir"
+            >
+              ⚠
+            </span>
+          )}
           <a
             href={pdfUrl(`/pdf/orders/${row.orderId}/factory-sheet.pdf`)}
             target="_blank"
