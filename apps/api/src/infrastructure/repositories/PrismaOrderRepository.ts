@@ -261,14 +261,18 @@ export class PrismaOrderRepository implements OrderRepository {
     return row ? toPaymentDomain(row) : null;
   }
 
+  // `feePct` and `note` are optional on PaymentInput, and a caller that leaves one out means "I'm
+  // not touching this", not "clear it" — the edit-payment modal only ever sends amount/method/note,
+  // so coalescing an absent `feePct` to null silently wiped a fee the user never saw. An explicit
+  // `null` still clears the column; only `undefined` keeps the stored value.
   async updatePayment(id: string, input: PaymentInput): Promise<Payment> {
     const row = await this.prisma.payment.update({
       where: { id },
       data: {
         amount: input.amount,
         method: input.method,
-        feePct: input.feePct ?? null,
-        note: input.note ?? null,
+        ...(input.feePct !== undefined && { feePct: input.feePct }),
+        ...(input.note !== undefined && { note: input.note }),
       },
     });
     return toPaymentDomain(row);

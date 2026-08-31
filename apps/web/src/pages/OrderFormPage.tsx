@@ -24,6 +24,7 @@ import {
   TextArea,
   TextInput,
 } from "@/components/ui";
+import { formatCurrency } from "@/utils/currency";
 
 // The React key has to survive reordering, so it lives alongside the draft rather than inside it.
 interface ItemDraft extends OrderItemDraft {
@@ -36,14 +37,6 @@ function today(): string {
 
 function emptyItem(deliveryDate: string): ItemDraft {
   return { key: crypto.randomUUID(), ...emptyOrderItemDraft(deliveryDate) };
-}
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  });
 }
 
 export function OrderFormPage() {

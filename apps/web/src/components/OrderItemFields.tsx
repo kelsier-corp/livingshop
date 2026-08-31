@@ -2,6 +2,7 @@ import { AttributeCatalog, AttributeValues, ProductCategory, ProductType } from 
 import { CatalogValueSelect } from "@/components/CatalogValueSelect";
 import { ProductTypePicker } from "@/components/ProductTypePicker";
 import { FieldLabel, SecondaryButton, TextArea, TextInput } from "@/components/ui";
+import { formatCurrency } from "@/utils/currency";
 import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 export interface CustomAttribute {
@@ -37,14 +38,6 @@ export function buildItemAttributes(draft: OrderItemDraft): AttributeValues {
     if (custom.key.trim()) attributes[custom.key.trim()] = custom.value;
   }
   return attributes;
-}
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  });
 }
 
 interface Props {

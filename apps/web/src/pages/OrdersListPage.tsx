@@ -14,6 +14,7 @@ import {
   TextInput,
 } from "@/components/ui";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { formatCurrency } from "@/utils/currency";
 import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 const PAGE_SIZE = 10;
@@ -21,14 +22,6 @@ const PAGE_SIZE = 10;
 function formatDate(value: string | null): string {
   if (!value) return "-";
   return new Date(value).toLocaleDateString("es-AR");
-}
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  });
 }
 
 function earliestDelivery(items: { deliveryDate: string }[]): string | null {

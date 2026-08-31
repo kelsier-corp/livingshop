@@ -53,19 +53,21 @@ export class OrdersController {
   };
 
   addItem = async (req: Request, res: Response): Promise<void> => {
+    const isFactory = req.currentUser?.role === "factory";
     const input = orderItemInputSchema.parse(req.body);
     const order = await this.orderService.addItem(param(req, "id"), input);
-    res.status(201).json(toResponseOrder(order, false));
+    res.status(201).json(toResponseOrder(order, isFactory));
   };
 
   setItemActive = async (req: Request, res: Response): Promise<void> => {
+    const isFactory = req.currentUser?.role === "factory";
     const { active } = orderItemActiveInputSchema.parse(req.body);
     const order = await this.orderService.setItemActive(
       param(req, "id"),
       param(req, "itemId"),
       active
     );
-    res.json(toResponseOrder(order, false));
+    res.json(toResponseOrder(order, isFactory));
   };
 
   addPayment = async (req: Request, res: Response): Promise<void> => {

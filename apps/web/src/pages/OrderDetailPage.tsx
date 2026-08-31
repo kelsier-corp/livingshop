@@ -37,6 +37,7 @@ import {
   SecondaryButton,
   TextInput,
 } from "@/components/ui";
+import { formatCurrency } from "@/utils/currency";
 import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 const STATUSES: OrderStatus[] = ["draft", "confirmed", "in_production", "delivered", "cancelled"];
@@ -67,14 +68,6 @@ function formatDateTime(value: string | null): string {
   });
 }
 
-function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  });
-}
-
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -95,23 +88,6 @@ export function OrderDetailPage() {
   const activeMethods = paymentMethods.filter((m) => m.active);
   const canEditItems = !!order && ITEM_EDITABLE_STATUSES.includes(order.status);
 
-  // Only needed by the "add a product" modal, so they're not fetched until the order allows it.
-  const { data: productTypes = [] } = useQuery({
-    queryKey: ["product-types-all"],
-    queryFn: fetchAllProductTypes,
-    enabled: canEditItems,
-  });
-  const { data: productCategories = [] } = useQuery({
-    queryKey: ["product-categories-all"],
-    queryFn: fetchAllProductCategories,
-    enabled: canEditItems,
-  });
-  const { data: attributeCatalogs = [] } = useQuery({
-    queryKey: ["attribute-catalogs-all"],
-    queryFn: fetchAllAttributeCatalogs,
-    enabled: canEditItems,
-  });
-
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "", note: "" });
   const [pendingPreview, setPendingPreview] = useState<{ itemId: string; url: string } | null>(
     null
@@ -120,6 +96,27 @@ export function OrderDetailPage() {
   const [itemDraft, setItemDraft] = useState<OrderItemDraft>(() => emptyOrderItemDraft(today()));
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [paymentEdit, setPaymentEdit] = useState({ amount: "", method: "", note: "" });
+
+  // Three unpaginated /all catalog endpoints, needed only by the "add a product" modal — so they
+  // wait until it actually opens, not just until the order's status would allow opening it. Merely
+  // viewing a draft/confirmed order shouldn't fetch the whole catalog. React Query keeps the
+  // results cached once fetched, so reopening the modal doesn't re-request them.
+  const loadItemCatalogs = canEditItems && addingItem;
+  const { data: productTypes = [] } = useQuery({
+    queryKey: ["product-types-all"],
+    queryFn: fetchAllProductTypes,
+    enabled: loadItemCatalogs,
+  });
+  const { data: productCategories = [] } = useQuery({
+    queryKey: ["product-categories-all"],
+    queryFn: fetchAllProductCategories,
+    enabled: loadItemCatalogs,
+  });
+  const { data: attributeCatalogs = [] } = useQuery({
+    queryKey: ["attribute-catalogs-all"],
+    queryFn: fetchAllAttributeCatalogs,
+    enabled: loadItemCatalogs,
+  });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["orders", id] });
 
