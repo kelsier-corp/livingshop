@@ -24,7 +24,7 @@ Why things are built the way they are. Each entry is a decision + the reasoning 
 
 **Single-tenant.** This system is built for Livingshop specifically, not as a multi-client product. No tenant isolation exists anywhere in the schema or auth.
 
-**No real authentication.** A mock user switcher sends an `x-user-id` header resolved against 3 seeded users (one per role), which is enough to model role-based behavior (pricing and payments hidden from the `factory` role, etc.) without building real auth before the workflow itself is validated. Real auth is a known gap to close before this goes anywhere near production, not an oversight.
+**No real authentication.** A mock user switcher sends an `x-user-id` header resolved against 3 seeded users (one per role), which is enough to model role-based behavior (write access gated per route, e.g. only `admin`/`sales`/`factory` can update an order's status and only `factory` is blocked from every other write) without building real auth before the workflow itself is validated. Real auth is a known gap to close before this goes anywhere near production, not an oversight.
 
 **External suppliers are out of scope.** The legacy sales spreadsheet tracks goods Livingshop resells but doesn't manufacture (rugs, imported pieces, third-party workshops). That whole flow — supplier field, "order placed" checkbox, invoicing details — was explicitly excluded from v1 to keep the model focused on in-house manufacturing.
 

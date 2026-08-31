@@ -122,7 +122,7 @@ Dependency direction is strictly one-way: `presentation → application → doma
 domain/
   entities/        plain TS interfaces + enums (no behavior)
   repositories/     interfaces only — the "ports" every Prisma*Repository implements
-  policies/         pure functions with real business rules (order totals, factory-safe view)
+  policies/         pure functions with real business rules (order totals, production-board pricing strip)
   errors/           DomainError subclasses, thrown from application/domain, mapped to HTTP by errorHandler
 
 application/<module>/<Module>Service.ts
@@ -154,7 +154,7 @@ There's no dependency-injection framework: `app.ts` is the single place where co
 2. The controller parses the body with `orderInputSchema` (Zod) and calls `OrderService.create`.
 3. `OrderService.buildCreateData` validates the customer/salesperson/product types exist, checks required attributes per item, and resolves each item's `unitPrice`/`totalPrice` from the current `ProductType.basePrice`.
 4. `PrismaOrderRepository.create` persists the order + items in one Prisma call.
-5. The controller re-shapes the result: factory-role callers get `toFactoryOrderView(order)` (drops pricing/payments); everyone else gets the order plus `computeOrderTotals(order)`.
+5. The controller returns the order plus `computeOrderTotals(order)` — the same full shape (pricing and payments included) regardless of the caller's role; `requireRole` is what actually keeps `factory` off this route.
 
 ### Pagination shape
 
