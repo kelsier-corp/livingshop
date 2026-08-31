@@ -320,7 +320,7 @@ export class PrismaOrderRepository implements OrderRepository {
     const where: Prisma.OrderItemWhereInput = {
       active: true,
       order: {
-        status: { in: ["confirmed", "in_production"] },
+        status: { in: ["draft", "in_production"] },
         ...(query.number !== undefined ? { number: query.number } : {}),
       },
     };
@@ -354,7 +354,7 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async listAllItemsWithContext(): Promise<OrderItemWithContext[]> {
     const rows = await this.prisma.orderItem.findMany({
-      where: { active: true, order: { status: { in: ["confirmed", "in_production"] } } },
+      where: { active: true, order: { status: { in: ["draft", "in_production"] } } },
       include: productionItemInclude,
       orderBy: [{ deliveryDate: "asc" }, { createdAt: "asc" }],
     });

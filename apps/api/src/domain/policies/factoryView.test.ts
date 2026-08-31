@@ -81,7 +81,7 @@ function buildItemWithContext(overrides: Partial<OrderItemWithContext> = {}): Or
     ...buildItem(),
     orderNumber: 1,
     orderDate: new Date("2026-01-01"),
-    orderStatus: "confirmed",
+    orderStatus: "draft",
     customerFullName: "Ana Test",
     ...overrides,
   };

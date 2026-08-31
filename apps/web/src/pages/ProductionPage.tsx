@@ -5,14 +5,13 @@ import { pdfUrl } from "@/api/client";
 import { updateOrderStatus } from "@/api/orders";
 import { fetchProductionBoard, toggleProductionStage } from "@/api/production";
 import { OrderItemWithContext, OrderStatus, ProductionStage } from "@/api/types";
-import { ORDER_STATUS_LABEL } from "@/components/OrderStatusBadge";
+import { ORDER_STATUS_LABEL, ORDER_STATUSES } from "@/components/OrderStatusBadge";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
 import { Card, FieldLabel, PageHeader, Select, SecondaryButton, TextInput } from "@/components/ui";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 const PAGE_SIZE = 15;
-const FACTORY_STATUSES: OrderStatus[] = ["confirmed", "in_production"];
 
 function formatDate(value: string | null): string {
   if (!value) return "Sin fecha";
@@ -88,7 +87,7 @@ export function ProductionPage() {
             statusMutation.mutate({ orderId: row.orderId, status: e.target.value as OrderStatus })
           }
         >
-          {FACTORY_STATUSES.map((status) => (
+          {ORDER_STATUSES.map((status) => (
             <option key={status} value={status}>
               {ORDER_STATUS_LABEL[status]}
             </option>

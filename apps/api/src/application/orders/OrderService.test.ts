@@ -108,7 +108,7 @@ function buildOrder(overrides: Partial<Order> = {}): Order {
     customerId: "customer-1",
     customerFullName: "Ana Gómez",
     salespersonId: "user-1",
-    status: "confirmed",
+    status: "draft",
     notes: null,
     items: [],
     payments: [],
@@ -311,61 +311,29 @@ describe("OrderService.updateStatus", () => {
   it("404s when the order doesn't exist", async () => {
     const { service, orderRepository } = buildService();
     orderRepository.findById = vi.fn(async () => null);
-    await expect(service.updateStatus("missing", "confirmed", "admin")).rejects.toThrow(
-      NotFoundError
-    );
+    await expect(service.updateStatus("missing", "in_production")).rejects.toThrow(NotFoundError);
   });
 
-  it("lets admin set any status, including ones outside the factory's range", async () => {
-    const { service, orderRepository } = buildService();
-    orderRepository.findById = vi.fn(async () => buildOrder({ status: "confirmed" }));
-    await service.updateStatus("order-1", "delivered", "admin");
-    expect(orderRepository.updateStatus).toHaveBeenCalledWith("order-1", "delivered");
-  });
-
-  it("lets sales set any status too, since sales already manages the full order lifecycle", async () => {
-    const { service, orderRepository } = buildService();
-    orderRepository.findById = vi.fn(async () => buildOrder({ status: "confirmed" }));
-    await service.updateStatus("order-1", "in_production", "sales");
-    expect(orderRepository.updateStatus).toHaveBeenCalledWith("order-1", "in_production");
-  });
-
-  it("lets factory move a confirmed order into in_production", async () => {
-    const { service, orderRepository } = buildService();
-    orderRepository.findById = vi.fn(async () => buildOrder({ status: "confirmed" }));
-    await service.updateStatus("order-1", "in_production", "factory");
-    expect(orderRepository.updateStatus).toHaveBeenCalledWith("order-1", "in_production");
-  });
-
-  it("lets factory move an order back from in_production to confirmed", async () => {
-    const { service, orderRepository } = buildService();
-    orderRepository.findById = vi.fn(async () => buildOrder({ status: "in_production" }));
-    await service.updateStatus("order-1", "confirmed", "factory");
-    expect(orderRepository.updateStatus).toHaveBeenCalledWith("order-1", "confirmed");
-  });
-
-  it("blocks factory from setting a status outside confirmed/in_production", async () => {
-    const { service, orderRepository } = buildService();
-    orderRepository.findById = vi.fn(async () => buildOrder({ status: "confirmed" }));
-    await expect(service.updateStatus("order-1", "delivered", "factory")).rejects.toThrow(
-      ForbiddenError
-    );
-    expect(orderRepository.updateStatus).not.toHaveBeenCalled();
-  });
-
-  it("blocks factory from touching an order that isn't confirmed or in_production yet", async () => {
-    const { service, orderRepository } = buildService();
-    orderRepository.findById = vi.fn(async () => buildOrder({ status: "draft" }));
-    await expect(service.updateStatus("order-1", "confirmed", "factory")).rejects.toThrow(
-      ForbiddenError
-    );
-  });
+  // Unrestricted by role on purpose: admin, sales and factory can all move an order to any
+  // status, since sales confirms the sale but has no visibility into the factory floor's actual
+  // progress, and vice versa. There's no per-role gating left to test — just that any transition
+  // reaches the repository unmodified.
+  it.each(ORDER_STATUSES)(
+    "sets the order to %s regardless of its current status",
+    async (status) => {
+      const { service, orderRepository } = buildService();
+      orderRepository.findById = vi.fn(async () => buildOrder({ status: "draft" }));
+      await service.updateStatus("order-1", status);
+      expect(orderRepository.updateStatus).toHaveBeenCalledWith("order-1", status);
+    }
+  );
 });
 
-// The whole point of the feature: the item list is editable exactly while the order is still being
-// agreed with the customer, and locked once the factory is building it or the order is closed.
-const ITEM_EDITABLE: OrderStatus[] = ["draft", "confirmed"];
-const ITEM_LOCKED: OrderStatus[] = ["in_production", "delivered", "cancelled"];
+// The whole point of the feature: the item list is editable exactly while the order is still a
+// draft being agreed with the customer, and locked once the factory is building it or the order
+// is closed.
+const ITEM_EDITABLE: OrderStatus[] = ["draft"];
+const ITEM_LOCKED: OrderStatus[] = ["in_production", "delivered", "voided"];
 
 describe("OrderService.addItem", () => {
   it.each(ITEM_EDITABLE)("adds a product to a %s order", async (status) => {
@@ -399,7 +367,7 @@ describe("OrderService.addItem", () => {
     const productType = buildProductType({ basePrice: 7000 });
     const { service, orderRepository } = buildService({ productType });
     orderRepository.findById = vi.fn(async () =>
-      buildOrder({ status: "confirmed", items: [buildItem({ unitPrice: 1000, totalPrice: 1000 })] })
+      buildOrder({ status: "draft", items: [buildItem({ unitPrice: 1000, totalPrice: 1000 })] })
     );
 
     await service.addItem("order-1", buildItemInput({ quantity: 2 }));
@@ -476,7 +444,7 @@ describe("OrderService.setItemActive", () => {
   });
 
   it("404s when the item belongs to a different order", async () => {
-    const { service, orderRepository } = buildWithTwoItems("confirmed");
+    const { service, orderRepository } = buildWithTwoItems("draft");
     orderRepository.findItemById = vi.fn(async () => buildItem({ orderId: "order-2" }));
 
     await expect(service.setItemActive("order-1", "item-1", false)).rejects.toThrow(NotFoundError);
@@ -484,14 +452,14 @@ describe("OrderService.setItemActive", () => {
   });
 
   it("404s when the item doesn't exist", async () => {
-    const { service, orderRepository } = buildWithTwoItems("confirmed");
+    const { service, orderRepository } = buildWithTwoItems("draft");
     orderRepository.findItemById = vi.fn(async () => null);
 
     await expect(service.setItemActive("order-1", "missing", false)).rejects.toThrow(NotFoundError);
   });
 
   it("rejects taking off a product that's already off the order", async () => {
-    const { service, orderRepository } = buildWithTwoItems("confirmed");
+    const { service, orderRepository } = buildWithTwoItems("draft");
     orderRepository.findItemById = vi.fn(async () => buildItem({ active: false }));
 
     await expect(service.setItemActive("order-1", "item-1", false)).rejects.toThrow(
@@ -503,7 +471,7 @@ describe("OrderService.setItemActive", () => {
   it("refuses to remove the last product, since create() would reject that same order", async () => {
     const { service, orderRepository } = buildService();
     orderRepository.findById = vi.fn(async () =>
-      buildOrder({ status: "confirmed", items: [buildItem({ id: "item-1" })] })
+      buildOrder({ status: "draft", items: [buildItem({ id: "item-1" })] })
     );
     orderRepository.findItemById = vi.fn(async () => buildItem({ id: "item-1" }));
 
@@ -514,7 +482,7 @@ describe("OrderService.setItemActive", () => {
   });
 
   it("puts a previously removed product back on the order", async () => {
-    const { service, orderRepository } = buildWithTwoItems("confirmed");
+    const { service, orderRepository } = buildWithTwoItems("draft");
     orderRepository.findItemById = vi.fn(async () => buildItem({ id: "item-1", active: false }));
 
     await service.setItemActive("order-1", "item-1", true);
@@ -523,7 +491,7 @@ describe("OrderService.setItemActive", () => {
   });
 
   it("rejects putting back a product that's already on the order", async () => {
-    const { service, orderRepository } = buildWithTwoItems("confirmed");
+    const { service, orderRepository } = buildWithTwoItems("draft");
 
     await expect(service.setItemActive("order-1", "item-1", true)).rejects.toThrow(ValidationError);
   });
@@ -531,7 +499,7 @@ describe("OrderService.setItemActive", () => {
   it("doesn't apply the minimum-items guard when putting a product back", async () => {
     const { service, orderRepository } = buildService();
     orderRepository.findById = vi.fn(async () =>
-      buildOrder({ status: "confirmed", items: [buildItem({ id: "item-2" })] })
+      buildOrder({ status: "draft", items: [buildItem({ id: "item-2" })] })
     );
     orderRepository.findItemById = vi.fn(async () => buildItem({ id: "item-1", active: false }));
 
@@ -565,7 +533,7 @@ describe("OrderService.updatePayment", () => {
   });
 
   it("rejects an amount of 0", async () => {
-    const { service } = buildWithPayment("confirmed");
+    const { service } = buildWithPayment("draft");
 
     await expect(
       service.updatePayment("order-1", "payment-1", { amount: 0, method: "Efectivo" })
@@ -573,7 +541,7 @@ describe("OrderService.updatePayment", () => {
   });
 
   it("rejects a negative amount", async () => {
-    const { service } = buildWithPayment("confirmed");
+    const { service } = buildWithPayment("draft");
 
     await expect(
       service.updatePayment("order-1", "payment-1", { amount: -50, method: "Efectivo" })
@@ -581,7 +549,7 @@ describe("OrderService.updatePayment", () => {
   });
 
   it("rejects a blank method", async () => {
-    const { service } = buildWithPayment("confirmed");
+    const { service } = buildWithPayment("draft");
 
     await expect(
       service.updatePayment("order-1", "payment-1", { amount: 100, method: "  " })
@@ -589,7 +557,7 @@ describe("OrderService.updatePayment", () => {
   });
 
   it("404s when the order doesn't exist", async () => {
-    const { service, orderRepository } = buildWithPayment("confirmed");
+    const { service, orderRepository } = buildWithPayment("draft");
     orderRepository.findById = vi.fn(async () => null);
 
     await expect(
@@ -598,7 +566,7 @@ describe("OrderService.updatePayment", () => {
   });
 
   it("404s when the payment doesn't exist", async () => {
-    const { service, orderRepository } = buildWithPayment("confirmed");
+    const { service, orderRepository } = buildWithPayment("draft");
     orderRepository.findPaymentById = vi.fn(async () => null);
 
     await expect(
@@ -607,7 +575,7 @@ describe("OrderService.updatePayment", () => {
   });
 
   it("404s when the payment belongs to a different order", async () => {
-    const { service, orderRepository } = buildWithPayment("confirmed");
+    const { service, orderRepository } = buildWithPayment("draft");
     orderRepository.findPaymentById = vi.fn(async () => buildPayment({ orderId: "order-2" }));
 
     await expect(

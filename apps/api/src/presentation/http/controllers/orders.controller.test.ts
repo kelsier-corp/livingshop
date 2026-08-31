@@ -33,7 +33,7 @@ function buildOrder(): Order {
     customerId: "customer-1",
     customerFullName: "Ana Test",
     salespersonId: "user-1",
-    status: "confirmed",
+    status: "draft",
     notes: null,
     items: [buildItem()],
     payments: [

@@ -69,7 +69,7 @@ erDiagram
         int number
         date date
         date printedAt
-        string status "draft | confirmed | in_production | delivered | cancelled"
+        string status "draft | in_production | delivered | voided"
         string notes
     }
     ORDER_ITEM {
@@ -177,7 +177,7 @@ Two categories of exception, both deliberate:
 
 `CustomerPicker` searches the paginated `GET /customers?search=...` endpoint itself (debounced), rather than filtering a fully-loaded customer list client-side — the same way `OrderDetailPage` fetches a single customer by id (`GET /customers/:id`) instead of loading everyone to find one. Both matter because customer count scales with order volume.
 
-The production board (`GET /production/board`) filters to `status: { in: ["confirmed", "in_production"] }` — draft orders aren't committed yet, delivered/cancelled ones are done — so factory staff only ever see active work.
+The production board (`GET /production/board`) filters to `status: { in: ["draft", "in_production"] }` — delivered/voided orders are done — so factory staff only ever see active work.
 
 ## Web layering (`apps/web/src`)
 

@@ -1,4 +1,4 @@
-import { AttachmentType, OrderStatus, ProductionStage, UserRole } from "@domain/entities/enums";
+import { AttachmentType, OrderStatus, ProductionStage } from "@domain/entities/enums";
 import {
   Attachment,
   Order,
@@ -43,22 +43,11 @@ export class OrderService {
     return this.orderRepository.create(data);
   }
 
-  async updateStatus(id: string, status: OrderStatus, role: UserRole): Promise<Order> {
-    const order = await this.getById(id);
-    // Sales confirms an order but has no visibility into when the factory floor actually
-    // starts building it, so factory needs to be able to toggle that transition themselves —
-    // but only between confirmed and in_production, never into delivered/cancelled/draft.
-    if (role === "factory") {
-      const FACTORY_ALLOWED_STATUSES: OrderStatus[] = ["confirmed", "in_production"];
-      if (
-        !FACTORY_ALLOWED_STATUSES.includes(order.status) ||
-        !FACTORY_ALLOWED_STATUSES.includes(status)
-      ) {
-        throw new ForbiddenError(
-          "Factory can only toggle an order between confirmed and in_production"
-        );
-      }
-    }
+  // Unrestricted by role on purpose: admin, sales and factory can all move an order to any
+  // status. Sales confirms the sale but has no visibility into when the factory floor actually
+  // starts or finishes building it, so factory needs the same freedom to update it themselves.
+  async updateStatus(id: string, status: OrderStatus): Promise<Order> {
+    await this.getById(id);
     return this.orderRepository.updateStatus(id, status);
   }
 

@@ -73,7 +73,7 @@ export interface AttributeCatalog {
   values: AttributeCatalogValue[];
 }
 
-export type OrderStatus = "draft" | "confirmed" | "in_production" | "delivered" | "cancelled";
+export type OrderStatus = "draft" | "in_production" | "delivered" | "voided";
 
 export type AttachmentType = "sketch" | "reference_photo";
 

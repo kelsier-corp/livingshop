@@ -20,10 +20,9 @@ enum AttributeDataType {
 
 enum OrderStatus {
   draft
-  confirmed
   in_production
   delivered
-  cancelled
+  voided
 }
 
 enum ProductionStage {

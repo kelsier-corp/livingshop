@@ -20,7 +20,11 @@ import { fetchAllProductTypes } from "@/api/productTypes";
 import { OrderStatus, Payment } from "@/api/types";
 import { Collapsible } from "@/components/Collapsible";
 import { Modal } from "@/components/Modal";
-import { ORDER_STATUS_LABEL, OrderStatusBadge } from "@/components/OrderStatusBadge";
+import {
+  ORDER_STATUS_LABEL,
+  ORDER_STATUSES,
+  OrderStatusBadge,
+} from "@/components/OrderStatusBadge";
 import {
   OrderItemDraft,
   OrderItemFields,
@@ -40,11 +44,9 @@ import {
 import { formatCurrency } from "@/utils/currency";
 import { isNumericInput, respectsMinimum } from "@/utils/number";
 
-const STATUSES: OrderStatus[] = ["draft", "confirmed", "in_production", "delivered", "cancelled"];
-
 // Mirrors ITEM_EDITABLE_STATUSES in the API's domain/policies/orderEditing.ts — the server is the
 // one that enforces it, this only decides whether to offer the controls.
-const ITEM_EDITABLE_STATUSES: OrderStatus[] = ["draft", "confirmed"];
+const ITEM_EDITABLE_STATUSES: OrderStatus[] = ["draft"];
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -278,7 +280,7 @@ export function OrderDetailPage() {
                 onChange={(e) => statusMutation.mutate(e.target.value as OrderStatus)}
                 className="w-auto"
               >
-                {STATUSES.map((status) => (
+                {ORDER_STATUSES.map((status) => (
                   <option key={status} value={status}>
                     {ORDER_STATUS_LABEL[status]}
                   </option>
@@ -305,8 +307,7 @@ export function OrderDetailPage() {
               </SecondaryButton>
             ) : (
               <p className="max-w-xs text-right text-xs text-ink-soft/70">
-                Los productos solo se pueden agregar o quitar mientras la orden está en borrador o
-                confirmada.
+                Los productos solo se pueden agregar o quitar mientras la orden está en borrador.
               </p>
             )
           }

@@ -44,11 +44,7 @@ export class OrdersController {
   updateStatus = async (req: Request, res: Response): Promise<void> => {
     const isFactory = req.currentUser?.role === "factory";
     const { status } = orderStatusInputSchema.parse(req.body);
-    const order = await this.orderService.updateStatus(
-      param(req, "id"),
-      status,
-      req.currentUser!.role
-    );
+    const order = await this.orderService.updateStatus(param(req, "id"), status);
     res.json(toResponseOrder(order, isFactory));
   };
 

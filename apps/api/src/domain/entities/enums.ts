@@ -4,21 +4,14 @@ export type UserRole = (typeof USER_ROLES)[number];
 export const ATTRIBUTE_DATA_TYPES = ["text", "catalog"] as const;
 export type AttributeDataType = (typeof ATTRIBUTE_DATA_TYPES)[number];
 
-export const ORDER_STATUSES = [
-  "draft",
-  "confirmed",
-  "in_production",
-  "delivered",
-  "cancelled",
-] as const;
+export const ORDER_STATUSES = ["draft", "in_production", "delivered", "voided"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   draft: "Borrador",
-  confirmed: "Confirmada",
-  in_production: "En producción",
+  in_production: "Producción",
   delivered: "Entregada",
-  cancelled: "Cancelada",
+  voided: "Anulada",
 };
 
 export const PRODUCTION_STAGES = [
