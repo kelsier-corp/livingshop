@@ -125,6 +125,7 @@ function buildService(options: { productType?: ProductType | null } = {}) {
     markPrinted: vi.fn(),
     addItem: vi.fn(async (orderId, data) => ({ id: orderId, items: [data] }) as never),
     setItemActive: vi.fn(async (orderId) => ({ id: orderId }) as never),
+    updateItemAttributes: vi.fn(async (orderId) => ({ id: orderId }) as never),
     findItemById: vi.fn(),
     addPayment: vi.fn(async (_orderId, input) => ({
       id: "payment-1",
@@ -506,6 +507,80 @@ describe("OrderService.setItemActive", () => {
     await service.setItemActive("order-1", "item-1", true);
 
     expect(orderRepository.setItemActive).toHaveBeenCalledWith("order-1", "item-1", true);
+  });
+});
+
+describe("OrderService.updateItemAttributes", () => {
+  // Unrestricted by order status on purpose — unlike addItem/setItemActive, this needs to work
+  // no matter what state the order is in.
+  it.each(ORDER_STATUSES)("updates attributes on a %s order", async (status) => {
+    const { service, orderRepository } = buildService();
+    orderRepository.findById = vi.fn(async () => buildOrder({ status, items: [buildItem()] }));
+    orderRepository.findItemById = vi.fn(async () => buildItem());
+
+    await service.updateItemAttributes("order-1", "item-1", {
+      attributes: { Tela: "Pana" },
+      factoryNotes: "Reforzar patas",
+    });
+
+    expect(orderRepository.updateItemAttributes).toHaveBeenCalledWith("order-1", "item-1", {
+      attributes: { Tela: "Pana" },
+      factoryNotes: "Reforzar patas",
+    });
+  });
+
+  it("404s when the order doesn't exist", async () => {
+    const { service, orderRepository } = buildService();
+    orderRepository.findById = vi.fn(async () => null);
+
+    await expect(
+      service.updateItemAttributes("missing", "item-1", { attributes: {} })
+    ).rejects.toThrow(NotFoundError);
+  });
+
+  it("404s when the item belongs to a different order", async () => {
+    const { service, orderRepository } = buildService();
+    orderRepository.findById = vi.fn(async () => buildOrder());
+    orderRepository.findItemById = vi.fn(async () => buildItem({ orderId: "order-2" }));
+
+    await expect(
+      service.updateItemAttributes("order-1", "item-1", { attributes: {} })
+    ).rejects.toThrow(NotFoundError);
+    expect(orderRepository.updateItemAttributes).not.toHaveBeenCalled();
+  });
+
+  it("404s when the item doesn't exist", async () => {
+    const { service, orderRepository } = buildService();
+    orderRepository.findById = vi.fn(async () => buildOrder());
+    orderRepository.findItemById = vi.fn(async () => null);
+
+    await expect(
+      service.updateItemAttributes("order-1", "missing", { attributes: {} })
+    ).rejects.toThrow(NotFoundError);
+  });
+
+  it("enforces required attributes, same as create/addItem", async () => {
+    const productType = buildProductType({
+      attributeDefinitions: [
+        {
+          id: "attr-1",
+          productTypeId: "product-1",
+          name: "Tela",
+          dataType: "text",
+          attributeCatalogId: null,
+          sortOrder: 0,
+          required: true,
+        },
+      ],
+    });
+    const { service, orderRepository } = buildService({ productType });
+    orderRepository.findById = vi.fn(async () => buildOrder());
+    orderRepository.findItemById = vi.fn(async () => buildItem());
+
+    await expect(
+      service.updateItemAttributes("order-1", "item-1", { attributes: {} })
+    ).rejects.toThrow(/Tela/);
+    expect(orderRepository.updateItemAttributes).not.toHaveBeenCalled();
   });
 });
 

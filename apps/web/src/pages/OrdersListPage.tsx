@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchOrders } from "@/api/orders";
 import { Order } from "@/api/types";
+import { useCurrentUser } from "@/auth/CurrentUserContext";
 import { DataTable, DataTableColumn, DataTableSort } from "@/components/DataTable";
 import { OrderStatusBadge } from "@/components/OrderStatusBadge";
 import {
@@ -33,6 +34,8 @@ const DEFAULT_SORT_BY = "date";
 const DEFAULT_SORT_DIRECTION = "desc";
 
 export function OrdersListPage() {
+  const { currentUser } = useCurrentUser();
+  const canCreateOrder = currentUser?.role !== "factory";
   const [page, setPage] = useState(1);
   const [numberFilter, setNumberFilter] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
@@ -161,9 +164,11 @@ export function OrdersListPage() {
       <PageHeader
         title="Órdenes"
         actions={
-          <Link to="/orders/new">
-            <PrimaryButton>Nueva orden</PrimaryButton>
-          </Link>
+          canCreateOrder && (
+            <Link to="/orders/new">
+              <PrimaryButton>Nueva orden</PrimaryButton>
+            </Link>
+          )
         }
       />
 

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { fetchAllAttributeCatalogs } from "@/api/attributeCatalogs";
 import { pdfUrl } from "@/api/client";
@@ -10,6 +10,7 @@ import {
   deleteAttachment,
   fetchOrder,
   setOrderItemActive,
+  updateOrderItemAttributes,
   updateOrderStatus,
   updatePayment,
   uploadAttachment,
@@ -17,7 +18,8 @@ import {
 import { fetchPaymentMethods } from "@/api/paymentMethods";
 import { fetchAllProductCategories } from "@/api/productCategories";
 import { fetchAllProductTypes } from "@/api/productTypes";
-import { OrderStatus, Payment } from "@/api/types";
+import { OrderItem, OrderStatus, Payment } from "@/api/types";
+import { useCurrentUser } from "@/auth/CurrentUserContext";
 import { Collapsible } from "@/components/Collapsible";
 import { Modal } from "@/components/Modal";
 import {
@@ -30,6 +32,7 @@ import {
   OrderItemFields,
   buildItemAttributes,
   emptyOrderItemDraft,
+  splitItemAttributes,
 } from "@/components/OrderItemFields";
 import {
   Card,
@@ -73,6 +76,11 @@ function formatDateTime(value: string | null): string {
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const { currentUser } = useCurrentUser();
+  // Factory can see this whole page now (pricing and payments included), it just can't touch
+  // anything on it — every mutation control below gets hidden for this role. The one exception is
+  // the status dropdown further down, which stays interactive for every role on purpose.
+  const isFactory = currentUser?.role === "factory";
   const { data: order, isLoading } = useQuery({
     queryKey: ["orders", id],
     queryFn: () => fetchOrder(id!),
@@ -88,7 +96,9 @@ export function OrderDetailPage() {
     queryFn: fetchPaymentMethods,
   });
   const activeMethods = paymentMethods.filter((m) => m.active);
-  const canEditItems = !!order && ITEM_EDITABLE_STATUSES.includes(order.status);
+  const canEditItems = !!order && !isFactory && ITEM_EDITABLE_STATUSES.includes(order.status);
+  // Unlike add/remove, editing an item's attributes isn't gated by order status — just by role.
+  const canEditAttributes = !isFactory;
 
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "", note: "" });
   const [pendingPreview, setPendingPreview] = useState<{ itemId: string; url: string } | null>(
@@ -98,12 +108,17 @@ export function OrderDetailPage() {
   const [itemDraft, setItemDraft] = useState<OrderItemDraft>(() => emptyOrderItemDraft(today()));
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [paymentEdit, setPaymentEdit] = useState({ amount: "", method: "", note: "" });
+  const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
+  const [itemAttrDraft, setItemAttrDraft] = useState<OrderItemDraft>(() =>
+    emptyOrderItemDraft(today())
+  );
 
-  // Three unpaginated /all catalog endpoints, needed only by the "add a product" modal — so they
-  // wait until it actually opens, not just until the order's status would allow opening it. Merely
-  // viewing a draft/confirmed order shouldn't fetch the whole catalog. React Query keeps the
-  // results cached once fetched, so reopening the modal doesn't re-request them.
-  const loadItemCatalogs = canEditItems && addingItem;
+  // Three unpaginated /all catalog endpoints, needed only by the "add a product" and "edit
+  // attributes" modals — so they wait until one of those actually opens, not just until the
+  // order's status would allow opening them. Merely viewing an order shouldn't fetch the whole
+  // catalog. React Query keeps the results cached once fetched, so reopening a modal doesn't
+  // re-request them.
+  const loadItemCatalogs = (canEditItems && addingItem) || (canEditAttributes && !!editingItem);
   const { data: productTypes = [] } = useQuery({
     queryKey: ["product-types-all"],
     queryFn: fetchAllProductTypes,
@@ -162,6 +177,40 @@ export function OrderDetailPage() {
     onSuccess: invalidate,
   });
 
+  const editItemMutation = useMutation({
+    mutationFn: () =>
+      updateOrderItemAttributes(id!, editingItem!.id, {
+        attributes: buildItemAttributes(itemAttrDraft),
+        factoryNotes: itemAttrDraft.factoryNotes || null,
+      }),
+    onSuccess: () => {
+      invalidate();
+      setEditingItem(null);
+    },
+  });
+
+  // Re-splits once the product-types catalog finishes loading (it starts out empty while the
+  // modal's first render happens), so the attribute inputs land in the right section instead of
+  // all showing up as "custom" just because the product type wasn't known yet.
+  useEffect(() => {
+    if (!editingItem) return;
+    const productType = productTypes.find(
+      (candidate) => candidate.id === editingItem.productTypeId
+    );
+    const { attributeValues, customAttributes } = splitItemAttributes(
+      editingItem.attributes,
+      productType
+    );
+    setItemAttrDraft({
+      productTypeId: editingItem.productTypeId,
+      quantity: editingItem.quantity,
+      deliveryDate: editingItem.deliveryDate,
+      attributeValues,
+      customAttributes,
+      factoryNotes: editingItem.factoryNotes ?? "",
+    });
+  }, [editingItem, productTypes]);
+
   const editPaymentMutation = useMutation({
     mutationFn: () =>
       updatePayment(id!, editingPayment!.id, {
@@ -207,6 +256,10 @@ export function OrderDetailPage() {
     if (window.confirm(`¿Quitar "${productTypeName ?? "este producto"}" de la orden?`)) {
       itemActiveMutation.mutate({ itemId, active: false });
     }
+  }
+
+  function closeItemEdit() {
+    setEditingItem(null);
   }
 
   function openPaymentEdit(payment: Payment) {
@@ -331,6 +384,15 @@ export function OrderDetailPage() {
                       {formatCurrency(item.totalPrice)}
                     </span>
                   )}
+                  {canEditAttributes && (
+                    <button
+                      type="button"
+                      className="text-xs text-accent hover:underline"
+                      onClick={() => setEditingItem(item)}
+                    >
+                      editar
+                    </button>
+                  )}
                   {/* An order can't end up with zero products — the API rejects it too. */}
                   {canEditItems && order.items.length > 1 && (
                     <button
@@ -396,14 +458,16 @@ export function OrderDetailPage() {
                       </a>
                       <div className="mt-1 flex items-center justify-between gap-1">
                         <span className="truncate text-xs text-ink-soft">Foto</span>
-                        <button
-                          type="button"
-                          className="text-xs text-signal hover:underline disabled:opacity-50"
-                          disabled={deleteAttachmentMutation.isPending}
-                          onClick={() => handleDeleteAttachment(attachment.id)}
-                        >
-                          eliminar
-                        </button>
+                        {!isFactory && (
+                          <button
+                            type="button"
+                            className="text-xs text-signal hover:underline disabled:opacity-50"
+                            disabled={deleteAttachmentMutation.isPending}
+                            onClick={() => handleDeleteAttachment(attachment.id)}
+                          >
+                            eliminar
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -421,28 +485,32 @@ export function OrderDetailPage() {
                     <p className="text-sm text-ink-soft/70">Todavía no hay fotos de referencia.</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <FileInput
-                    accept="image/jpeg,image/png"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileSelected(item.id, file);
-                      e.target.value = "";
-                    }}
-                  />
-                </div>
-                <p className="mt-1 text-xs text-ink-soft/70">
-                  Formatos aceptados: JPG o PNG. Tamaño máximo 8MB.
-                </p>
-                {attachmentMutation.isError && (
-                  <p className="mt-1 text-xs text-signal">
-                    {attachmentMutation.error instanceof Error
-                      ? attachmentMutation.error.message
-                      : "No se pudo subir el archivo."}
-                  </p>
-                )}
-                {deleteAttachmentMutation.isError && (
-                  <p className="mt-1 text-xs text-signal">No se pudo eliminar el adjunto.</p>
+                {!isFactory && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <FileInput
+                        accept="image/jpeg,image/png"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileSelected(item.id, file);
+                          e.target.value = "";
+                        }}
+                      />
+                    </div>
+                    <p className="mt-1 text-xs text-ink-soft/70">
+                      Formatos aceptados: JPG o PNG. Tamaño máximo 8MB.
+                    </p>
+                    {attachmentMutation.isError && (
+                      <p className="mt-1 text-xs text-signal">
+                        {attachmentMutation.error instanceof Error
+                          ? attachmentMutation.error.message
+                          : "No se pudo subir el archivo."}
+                      </p>
+                    )}
+                    {deleteAttachmentMutation.isError && (
+                      <p className="mt-1 text-xs text-signal">No se pudo eliminar el adjunto.</p>
+                    )}
+                  </>
                 )}
               </div>
             </Collapsible>
@@ -479,13 +547,15 @@ export function OrderDetailPage() {
                   {formatDate(payment.date)} — {formatCurrency(payment.amount)} ({payment.method})
                   {payment.note ? ` — ${payment.note}` : ""}
                 </span>
-                <button
-                  type="button"
-                  className="text-xs text-accent hover:underline"
-                  onClick={() => openPaymentEdit(payment)}
-                >
-                  editar
-                </button>
+                {!isFactory && (
+                  <button
+                    type="button"
+                    className="text-xs text-accent hover:underline"
+                    onClick={() => openPaymentEdit(payment)}
+                  >
+                    editar
+                  </button>
+                )}
               </li>
             ))}
             {(order.payments ?? []).length === 0 && (
@@ -493,37 +563,39 @@ export function OrderDetailPage() {
             )}
           </ul>
 
-          <form onSubmit={handlePaymentSubmit} className="grid grid-cols-4 gap-2">
-            <TextInput
-              type="text"
-              inputMode="decimal"
-              placeholder="Monto"
-              value={paymentForm.amount}
-              onChange={(e) => {
-                if (isNumericInput(e.target.value) && respectsMinimum(e.target.value)) {
-                  setPaymentForm({ ...paymentForm, amount: e.target.value });
-                }
-              }}
-            />
-            <Select
-              value={paymentForm.method || activeMethods[0]?.name || ""}
-              onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value })}
-            >
-              {activeMethods.map((method) => (
-                <option key={method.id} value={method.name}>
-                  {method.name}
-                </option>
-              ))}
-            </Select>
-            <TextInput
-              placeholder="Comentario (opcional)"
-              value={paymentForm.note}
-              onChange={(e) => setPaymentForm({ ...paymentForm, note: e.target.value })}
-            />
-            <PrimaryButton type="submit" disabled={paymentMutation.isPending}>
-              Agregar pago
-            </PrimaryButton>
-          </form>
+          {!isFactory && (
+            <form onSubmit={handlePaymentSubmit} className="grid grid-cols-4 gap-2">
+              <TextInput
+                type="text"
+                inputMode="decimal"
+                placeholder="Monto"
+                value={paymentForm.amount}
+                onChange={(e) => {
+                  if (isNumericInput(e.target.value) && respectsMinimum(e.target.value)) {
+                    setPaymentForm({ ...paymentForm, amount: e.target.value });
+                  }
+                }}
+              />
+              <Select
+                value={paymentForm.method || activeMethods[0]?.name || ""}
+                onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value })}
+              >
+                {activeMethods.map((method) => (
+                  <option key={method.id} value={method.name}>
+                    {method.name}
+                  </option>
+                ))}
+              </Select>
+              <TextInput
+                placeholder="Comentario (opcional)"
+                value={paymentForm.note}
+                onChange={(e) => setPaymentForm({ ...paymentForm, note: e.target.value })}
+              />
+              <PrimaryButton type="submit" disabled={paymentMutation.isPending}>
+                Agregar pago
+              </PrimaryButton>
+            </form>
+          )}
         </Card>
       )}
 
@@ -566,6 +638,40 @@ export function OrderDetailPage() {
               disabled={addItemMutation.isPending || !itemDraft.productTypeId}
             >
               Agregar producto
+            </PrimaryButton>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={!!editingItem} title="Editar atributos del producto" onClose={closeItemEdit}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            editItemMutation.mutate();
+          }}
+        >
+          <OrderItemFields
+            hideProductFields
+            draft={itemAttrDraft}
+            productTypes={productTypes}
+            categories={productCategories}
+            attributeCatalogs={attributeCatalogs}
+            showDeliveryDate={false}
+            onChange={(patch) => setItemAttrDraft({ ...itemAttrDraft, ...patch })}
+          />
+          {editItemMutation.isError && (
+            <p className="mt-2 text-xs text-signal">
+              {editItemMutation.error instanceof Error
+                ? editItemMutation.error.message
+                : "No se pudieron guardar los cambios."}
+            </p>
+          )}
+          <div className="mt-4 flex justify-end gap-2">
+            <SecondaryButton type="button" onClick={closeItemEdit}>
+              Cancelar
+            </SecondaryButton>
+            <PrimaryButton type="submit" disabled={editItemMutation.isPending}>
+              Guardar cambios
             </PrimaryButton>
           </div>
         </form>

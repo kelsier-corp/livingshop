@@ -47,6 +47,14 @@ export interface OrderItemInput {
   factoryNotes?: string | null;
 }
 
+// Unlike OrderItemInput, this never touches productTypeId/quantity/deliveryDate — editing an
+// item's attributes is meant for correcting/updating the product's spec after the fact, not for
+// turning it into a different sale. That's what removing the item and adding a new one is for.
+export interface OrderItemAttributesInput {
+  attributes: AttributeValues;
+  factoryNotes?: string | null;
+}
+
 export interface Payment {
   id: string;
   orderId: string;

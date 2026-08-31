@@ -1,15 +1,18 @@
 import { AttachmentType, OrderStatus, ProductionStage } from "@domain/entities/enums";
 import {
   Attachment,
+  AttributeValues,
   Order,
   OrderCreateData,
   OrderInput,
+  OrderItemAttributesInput,
   OrderItemCreateData,
   OrderItemInput,
   OrderListQuery,
   Payment,
   PaymentInput,
 } from "@domain/entities/Order";
+import { ProductType } from "@domain/entities/Catalog";
 import { PageResult } from "@domain/entities/Pagination";
 import { ForbiddenError, NotFoundError, ValidationError } from "@domain/errors/DomainError";
 import { ITEM_EDITABLE_STATUSES, canEditItems } from "@domain/policies/orderEditing";
@@ -81,6 +84,26 @@ export class OrderService {
     }
 
     return this.orderRepository.setItemActive(orderId, itemId, active);
+  }
+
+  // Unlike addItem/setItemActive, this is deliberately not gated by order status — correcting an
+  // item's spec (or its factory comments) can be legitimate at any point in the order's life, not
+  // just while it's still a draft.
+  async updateItemAttributes(
+    orderId: string,
+    itemId: string,
+    input: OrderItemAttributesInput
+  ): Promise<Order> {
+    await this.getById(orderId);
+
+    const item = await this.orderRepository.findItemById(itemId);
+    if (!item || item.orderId !== orderId) throw new NotFoundError("OrderItem", itemId);
+
+    const productType = await this.productTypeRepository.findById(item.productTypeId);
+    if (!productType) throw new NotFoundError("ProductType", item.productTypeId);
+    this.assertRequiredAttributes(productType, input.attributes);
+
+    return this.orderRepository.updateItemAttributes(orderId, itemId, input);
   }
 
   async addPayment(orderId: string, input: PaymentInput): Promise<Payment> {
@@ -165,10 +188,21 @@ export class OrderService {
 
     const productType = await this.productTypeRepository.findById(item.productTypeId);
     if (!productType) throw new NotFoundError("ProductType", item.productTypeId);
+    this.assertRequiredAttributes(productType, item.attributes);
 
+    return {
+      ...item,
+      unitPrice: productType.basePrice,
+      totalPrice: productType.basePrice * item.quantity,
+    };
+  }
+
+  // Shared by buildItemCreateData() and updateItemAttributes() so a product's required fields are
+  // enforced the same way whether they're set up front or edited in afterwards.
+  private assertRequiredAttributes(productType: ProductType, attributes: AttributeValues): void {
     for (const attribute of productType.attributeDefinitions) {
       if (attribute.required) {
-        const value = item.attributes[attribute.name];
+        const value = attributes[attribute.name];
         if (value === undefined || value === null || value === "") {
           throw new ValidationError(
             `Attribute "${attribute.name}" is required for product type "${productType.name}"`
@@ -176,12 +210,6 @@ export class OrderService {
         }
       }
     }
-
-    return {
-      ...item,
-      unitPrice: productType.basePrice,
-      totalPrice: productType.basePrice * item.quantity,
-    };
   }
 
   private assertItemsEditable(order: Order): void {

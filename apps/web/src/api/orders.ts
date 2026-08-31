@@ -57,6 +57,21 @@ export function setOrderItemActive(
   return apiPatch<Order>(`/orders/${orderId}/items/${itemId}`, { active });
 }
 
+export interface OrderItemAttributesInput {
+  attributes: AttributeValues;
+  factoryNotes?: string | null;
+}
+
+// Unrestricted by order status on purpose — correcting an item's spec (or its factory comments)
+// can be legitimate at any point in the order's life, not just while it's still a draft.
+export function updateOrderItemAttributes(
+  orderId: string,
+  itemId: string,
+  input: OrderItemAttributesInput
+): Promise<Order> {
+  return apiPatch<Order>(`/orders/${orderId}/items/${itemId}/attributes`, input);
+}
+
 export interface PaymentInput {
   amount: number;
   method: string;

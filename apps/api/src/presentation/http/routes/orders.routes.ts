@@ -13,6 +13,13 @@ export function createOrdersRouter(controller: OrdersController): Router {
   // PATCH rather than DELETE: taking a product off the order flips OrderItem.active, it never
   // deletes the row (see schema.prisma), and the same route puts it back with active: true.
   router.patch("/:id/items/:itemId", requireRole("admin", "sales"), controller.setItemActive);
+  // Unrestricted by order status, but never available to factory — see updateItemAttributes'
+  // comment in OrderService for why status doesn't gate this one.
+  router.patch(
+    "/:id/items/:itemId/attributes",
+    requireRole("admin", "sales"),
+    controller.updateItemAttributes
+  );
   router.post("/:id/payments", requireRole("admin", "sales"), controller.addPayment);
   router.patch("/:id/payments/:paymentId", requireRole("admin", "sales"), controller.updatePayment);
   router.post(

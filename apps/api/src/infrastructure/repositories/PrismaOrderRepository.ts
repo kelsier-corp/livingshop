@@ -5,6 +5,7 @@ import {
   Order,
   OrderCreateData,
   OrderItem,
+  OrderItemAttributesInput,
   OrderItemCreateData,
   OrderListQuery,
   Payment,
@@ -230,6 +231,29 @@ export class PrismaOrderRepository implements OrderRepository {
     await this.prisma.orderItem.update({ where: { id: itemId }, data: { active } });
     const row = await this.prisma.order.findUniqueOrThrow({
       where: { id: orderId },
+      include: orderInclude,
+    });
+    return toOrderDomain(row);
+  }
+
+  async updateItemAttributes(
+    orderId: string,
+    itemId: string,
+    data: OrderItemAttributesInput
+  ): Promise<Order> {
+    const row = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        items: {
+          update: {
+            where: { id: itemId },
+            data: {
+              attributes: data.attributes as Prisma.InputJsonValue,
+              factoryNotes: data.factoryNotes ?? null,
+            },
+          },
+        },
+      },
       include: orderInclude,
     });
     return toOrderDomain(row);
