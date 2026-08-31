@@ -5,12 +5,14 @@ import {
   OrderCreateData,
   OrderInput,
   OrderItemCreateData,
+  OrderItemInput,
   OrderListQuery,
   Payment,
   PaymentInput,
 } from "@domain/entities/Order";
 import { PageResult } from "@domain/entities/Pagination";
 import { ForbiddenError, NotFoundError, ValidationError } from "@domain/errors/DomainError";
+import { ITEM_EDITABLE_STATUSES, canEditItems } from "@domain/policies/orderEditing";
 import { CustomerRepository } from "@domain/repositories/CustomerRepository";
 import { ProductTypeRepository } from "@domain/repositories/CatalogRepository";
 import { OrderRepository } from "@domain/repositories/OrderRepository";
@@ -60,11 +62,54 @@ export class OrderService {
     return this.orderRepository.updateStatus(id, status);
   }
 
+  async addItem(orderId: string, input: OrderItemInput): Promise<Order> {
+    const order = await this.getById(orderId);
+    this.assertItemsEditable(order);
+    // Same snapshot rule as create(): the item takes the product's price as of right now, so
+    // adding a product later picks up any price change since the order was opened.
+    const data = await this.buildItemCreateData(input);
+    return this.orderRepository.addItem(orderId, data);
+  }
+
+  // Takes a product off the order (active: false) or puts one back on (active: true). Both
+  // directions are a plain update of the flag — the row is never deleted.
+  async setItemActive(orderId: string, itemId: string, active: boolean): Promise<Order> {
+    const order = await this.getById(orderId);
+    this.assertItemsEditable(order);
+
+    const item = await this.orderRepository.findItemById(itemId);
+    // Treat an item from another order as missing rather than leaking that the id exists.
+    if (!item || item.orderId !== orderId) throw new NotFoundError("OrderItem", itemId);
+    if (item.active === active) {
+      throw new ValidationError(
+        active ? "That product is already on the order" : "That product is already off the order"
+      );
+    }
+    // order.items only holds active items, and create() refuses an order with none — removal has
+    // to honour the same floor or the order would end up in a state create() would have rejected.
+    if (!active && order.items.length <= 1) {
+      throw new ValidationError("An order needs at least one item");
+    }
+
+    return this.orderRepository.setItemActive(orderId, itemId, active);
+  }
+
   async addPayment(orderId: string, input: PaymentInput): Promise<Payment> {
-    if (input.amount <= 0) throw new ValidationError("amount must be greater than zero");
-    if (!input.method.trim()) throw new ValidationError("method is required");
+    this.assertValidPayment(input);
     await this.getById(orderId);
     return this.orderRepository.addPayment(orderId, input);
+  }
+
+  // Deliberately not gated on order status: a balance can get settled (or a wrong amount spotted)
+  // after the order is delivered — see the note in domain/policies/orderEditing.ts.
+  async updatePayment(orderId: string, paymentId: string, input: PaymentInput): Promise<Payment> {
+    this.assertValidPayment(input);
+    await this.getById(orderId);
+
+    const payment = await this.orderRepository.findPaymentById(paymentId);
+    if (!payment || payment.orderId !== orderId) throw new NotFoundError("Payment", paymentId);
+
+    return this.orderRepository.updatePayment(paymentId, input);
   }
 
   async addAttachment(
@@ -110,28 +155,10 @@ export class OrderService {
 
     const items: OrderItemCreateData[] = [];
 
+    // Sequential on purpose: the first invalid item is the error the caller gets, and that has to
+    // be the first one in the list, not whichever request happened to resolve first.
     for (const item of input.items) {
-      if (item.quantity <= 0) throw new ValidationError("quantity must be greater than zero");
-
-      const productType = await this.productTypeRepository.findById(item.productTypeId);
-      if (!productType) throw new NotFoundError("ProductType", item.productTypeId);
-
-      for (const attribute of productType.attributeDefinitions) {
-        if (attribute.required) {
-          const value = item.attributes[attribute.name];
-          if (value === undefined || value === null || value === "") {
-            throw new ValidationError(
-              `Attribute "${attribute.name}" is required for product type "${productType.name}"`
-            );
-          }
-        }
-      }
-
-      items.push({
-        ...item,
-        unitPrice: productType.basePrice,
-        totalPrice: productType.basePrice * item.quantity,
-      });
+      items.push(await this.buildItemCreateData(item));
     }
 
     return {
@@ -140,5 +167,46 @@ export class OrderService {
       notes: input.notes,
       items,
     };
+  }
+
+  // Shared by create() and addItem() so a product added after the fact goes through exactly the
+  // same quantity / product-exists / required-attribute checks as one added up front.
+  private async buildItemCreateData(item: OrderItemInput): Promise<OrderItemCreateData> {
+    if (item.quantity <= 0) throw new ValidationError("quantity must be greater than zero");
+
+    const productType = await this.productTypeRepository.findById(item.productTypeId);
+    if (!productType) throw new NotFoundError("ProductType", item.productTypeId);
+
+    for (const attribute of productType.attributeDefinitions) {
+      if (attribute.required) {
+        const value = item.attributes[attribute.name];
+        if (value === undefined || value === null || value === "") {
+          throw new ValidationError(
+            `Attribute "${attribute.name}" is required for product type "${productType.name}"`
+          );
+        }
+      }
+    }
+
+    return {
+      ...item,
+      unitPrice: productType.basePrice,
+      totalPrice: productType.basePrice * item.quantity,
+    };
+  }
+
+  private assertItemsEditable(order: Order): void {
+    if (!canEditItems(order.status)) {
+      throw new ForbiddenError(
+        `Products can only be added or removed while the order is ${ITEM_EDITABLE_STATUSES.join(
+          " or "
+        )} — this one is ${order.status}`
+      );
+    }
+  }
+
+  private assertValidPayment(input: PaymentInput): void {
+    if (input.amount <= 0) throw new ValidationError("amount must be greater than zero");
+    if (!input.method.trim()) throw new ValidationError("method is required");
   }
 }

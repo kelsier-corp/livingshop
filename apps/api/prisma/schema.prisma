@@ -165,6 +165,11 @@ model OrderItem {
   deliveryDate  DateTime
   attributes    Json     @default("{}")
   factoryNotes  String?
+  // Taking a product off an order flips this to false instead of deleting the row: the item
+  // carries a price snapshot (see OrderItem's unitPrice/totalPrice) that historical reporting
+  // still needs, and the factory may already have printed a sheet listing it. Every read path
+  // filters on active, so a removed item disappears from totals, PDFs and the factory board.
+  active        Boolean  @default(true)
   createdAt     DateTime @default(now())
 
   attachments      Attachment[]

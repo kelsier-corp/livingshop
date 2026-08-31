@@ -32,6 +32,7 @@ function buildItem(unitPrice: number, quantity: number) {
     deliveryDate: new Date("2026-02-01"),
     attributes: {},
     factoryNotes: null,
+    active: true,
     attachments: [],
     productionStages: [],
   };

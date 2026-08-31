@@ -1,15 +1,8 @@
 import { useMemo, useState } from "react";
 import { ProductCategory, ProductType } from "@/api/types";
+import { formatCurrency } from "@/utils/currency";
 import { normalizeForSearch } from "@/utils/text";
 import { SecondaryButton, TextInput } from "./ui";
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  });
-}
 
 interface Props {
   productTypes: ProductType[];

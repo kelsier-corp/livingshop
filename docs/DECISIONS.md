@@ -34,6 +34,8 @@ Why things are built the way they are. Each entry is a decision + the reasoning 
 
 **Google Sheets export is deferred; PDF is the only export format in v1.** The production and sales boards replace the old Google Sheets, but export from them today is PDF-only (matching the printable paper workflows already in place). Sheets export needs a Google service account / OAuth decision that hasn't been made yet.
 
+**No concurrency handling.** Orders are registered one at a time by a small team, with plenty of time between them — there's no realistic concurrent-write scenario. Read-then-write patterns (status guards, item-count checks, etc.) aren't hardened against races on purpose. Concretely, `OrderService.setItemActive` checks the order's status and its remaining item count before flipping the flag, without a lock or a transaction, so two simultaneous removals could in theory leave an order with zero active items; the repository likewise writes in two non-atomic steps in places. These are known and accepted, not oversights — a reviewer running into one of these patterns should read it as deliberate rather than as a bug to fix.
+
 ## Frontend
 
 **Shared `DataTable` / `Modal` / `CategorySelector` components instead of ad hoc `<table>`s and inline forms.** Every list/form page is built from the same small set of primitives — `DataTable`, `Modal`, `CategorySelector` (plus `CategoryFilterSelect` for a single-value category filter and `CatalogValueSelect` for searching an attribute catalog's values) — so column widths line up and every edit opens in a focused modal, consistently across pages, without each page reinventing its own table or form chrome.
