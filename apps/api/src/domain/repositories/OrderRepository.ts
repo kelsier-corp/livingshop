@@ -3,6 +3,8 @@ import {
   Attachment,
   Order,
   OrderCreateData,
+  OrderItem,
+  OrderItemCreateData,
   OrderListQuery,
   Payment,
   PaymentInput,
@@ -18,7 +20,16 @@ export interface OrderRepository {
   create(data: OrderCreateData): Promise<Order>;
   updateStatus(id: string, status: OrderStatus): Promise<Order>;
   markPrinted(id: string): Promise<Order>;
+  // Both item mutations return the whole order so callers get the recomputed totals in one round
+  // trip, the same way create() already does.
+  addItem(orderId: string, data: OrderItemCreateData): Promise<Order>;
+  setItemActive(orderId: string, itemId: string, active: boolean): Promise<Order>;
+  // Reads an item regardless of its active flag, so the service can tell "not on this order" apart
+  // from "already taken off it".
+  findItemById(id: string): Promise<OrderItem | null>;
   addPayment(orderId: string, input: PaymentInput): Promise<Payment>;
+  findPaymentById(id: string): Promise<Payment | null>;
+  updatePayment(id: string, input: PaymentInput): Promise<Payment>;
   addAttachment(
     orderItemId: string,
     type: AttachmentType,

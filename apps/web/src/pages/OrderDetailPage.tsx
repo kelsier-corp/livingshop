@@ -1,19 +1,32 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { fetchAllAttributeCatalogs } from "@/api/attributeCatalogs";
 import { pdfUrl } from "@/api/client";
 import { fetchCustomer } from "@/api/customers";
 import {
+  addOrderItem,
   addPayment,
   deleteAttachment,
   fetchOrder,
+  setOrderItemActive,
   updateOrderStatus,
+  updatePayment,
   uploadAttachment,
 } from "@/api/orders";
 import { fetchPaymentMethods } from "@/api/paymentMethods";
-import { OrderStatus } from "@/api/types";
+import { fetchAllProductCategories } from "@/api/productCategories";
+import { fetchAllProductTypes } from "@/api/productTypes";
+import { OrderStatus, Payment } from "@/api/types";
 import { Collapsible } from "@/components/Collapsible";
+import { Modal } from "@/components/Modal";
 import { ORDER_STATUS_LABEL, OrderStatusBadge } from "@/components/OrderStatusBadge";
+import {
+  OrderItemDraft,
+  OrderItemFields,
+  buildItemAttributes,
+  emptyOrderItemDraft,
+} from "@/components/OrderItemFields";
 import {
   Card,
   FieldLabel,
@@ -24,9 +37,18 @@ import {
   SecondaryButton,
   TextInput,
 } from "@/components/ui";
+import { formatCurrency } from "@/utils/currency";
 import { isNumericInput, respectsMinimum } from "@/utils/number";
 
 const STATUSES: OrderStatus[] = ["draft", "confirmed", "in_production", "delivered", "cancelled"];
+
+// Mirrors ITEM_EDITABLE_STATUSES in the API's domain/policies/orderEditing.ts — the server is the
+// one that enforces it, this only decides whether to offer the controls.
+const ITEM_EDITABLE_STATUSES: OrderStatus[] = ["draft", "confirmed"];
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function formatDate(value: string | null): string {
   if (!value) return "-";
@@ -43,14 +65,6 @@ function formatDateTime(value: string | null): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  });
-}
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
   });
 }
 
@@ -72,10 +86,37 @@ export function OrderDetailPage() {
     queryFn: fetchPaymentMethods,
   });
   const activeMethods = paymentMethods.filter((m) => m.active);
+  const canEditItems = !!order && ITEM_EDITABLE_STATUSES.includes(order.status);
+
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "", note: "" });
   const [pendingPreview, setPendingPreview] = useState<{ itemId: string; url: string } | null>(
     null
   );
+  const [addingItem, setAddingItem] = useState(false);
+  const [itemDraft, setItemDraft] = useState<OrderItemDraft>(() => emptyOrderItemDraft(today()));
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [paymentEdit, setPaymentEdit] = useState({ amount: "", method: "", note: "" });
+
+  // Three unpaginated /all catalog endpoints, needed only by the "add a product" modal — so they
+  // wait until it actually opens, not just until the order's status would allow opening it. Merely
+  // viewing a draft/confirmed order shouldn't fetch the whole catalog. React Query keeps the
+  // results cached once fetched, so reopening the modal doesn't re-request them.
+  const loadItemCatalogs = canEditItems && addingItem;
+  const { data: productTypes = [] } = useQuery({
+    queryKey: ["product-types-all"],
+    queryFn: fetchAllProductTypes,
+    enabled: loadItemCatalogs,
+  });
+  const { data: productCategories = [] } = useQuery({
+    queryKey: ["product-categories-all"],
+    queryFn: fetchAllProductCategories,
+    enabled: loadItemCatalogs,
+  });
+  const { data: attributeCatalogs = [] } = useQuery({
+    queryKey: ["attribute-catalogs-all"],
+    queryFn: fetchAllAttributeCatalogs,
+    enabled: loadItemCatalogs,
+  });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["orders", id] });
 
@@ -94,6 +135,41 @@ export function OrderDetailPage() {
     onSuccess: () => {
       invalidate();
       setPaymentForm({ amount: "", method: "", note: "" });
+    },
+  });
+
+  const addItemMutation = useMutation({
+    mutationFn: () =>
+      addOrderItem(id!, {
+        productTypeId: itemDraft.productTypeId,
+        quantity: itemDraft.quantity,
+        deliveryDate: itemDraft.deliveryDate,
+        attributes: buildItemAttributes(itemDraft),
+        factoryNotes: itemDraft.factoryNotes || null,
+      }),
+    onSuccess: () => {
+      invalidate();
+      setAddingItem(false);
+      setItemDraft(emptyOrderItemDraft(today()));
+    },
+  });
+
+  const itemActiveMutation = useMutation({
+    mutationFn: ({ itemId, active }: { itemId: string; active: boolean }) =>
+      setOrderItemActive(id!, itemId, active),
+    onSuccess: invalidate,
+  });
+
+  const editPaymentMutation = useMutation({
+    mutationFn: () =>
+      updatePayment(id!, editingPayment!.id, {
+        amount: Number(paymentEdit.amount),
+        method: paymentEdit.method,
+        note: paymentEdit.note || null,
+      }),
+    onSuccess: () => {
+      invalidate();
+      setEditingPayment(null);
     },
   });
 
@@ -123,6 +199,21 @@ export function OrderDetailPage() {
     if (window.confirm("¿Eliminar este adjunto? Esta acción no se puede deshacer.")) {
       deleteAttachmentMutation.mutate(attachmentId);
     }
+  }
+
+  function handleRemoveItem(itemId: string, productTypeName: string | undefined) {
+    if (window.confirm(`¿Quitar "${productTypeName ?? "este producto"}" de la orden?`)) {
+      itemActiveMutation.mutate({ itemId, active: false });
+    }
+  }
+
+  function openPaymentEdit(payment: Payment) {
+    setEditingPayment(payment);
+    setPaymentEdit({
+      amount: String(payment.amount),
+      method: payment.method,
+      note: payment.note ?? "",
+    });
   }
 
   if (isLoading || !order) return <p className="text-sm text-ink-soft">Cargando…</p>;
@@ -205,17 +296,52 @@ export function OrderDetailPage() {
       </Card>
 
       <div className="space-y-4">
+        <PageHeader
+          title="Productos"
+          actions={
+            canEditItems ? (
+              <SecondaryButton type="button" onClick={() => setAddingItem(true)}>
+                Agregar producto
+              </SecondaryButton>
+            ) : (
+              <p className="max-w-xs text-right text-xs text-ink-soft/70">
+                Los productos solo se pueden agregar o quitar mientras la orden está en borrador o
+                confirmada.
+              </p>
+            )
+          }
+        />
+        {itemActiveMutation.isError && (
+          <p className="text-xs text-signal">
+            {itemActiveMutation.error instanceof Error
+              ? itemActiveMutation.error.message
+              : "No se pudo quitar el producto."}
+          </p>
+        )}
         {order.items.map((item) => (
           <Card key={item.id}>
             <Collapsible
               title={`${item.productTypeName} — Cant. ${item.quantity}`}
               subtitle={`Entrega ${formatDate(item.deliveryDate)}`}
               actions={
-                item.totalPrice !== undefined && (
-                  <span className="font-mono text-sm text-ink-soft">
-                    {formatCurrency(item.totalPrice)}
-                  </span>
-                )
+                <div className="flex items-center gap-3">
+                  {item.totalPrice !== undefined && (
+                    <span className="font-mono text-sm text-ink-soft">
+                      {formatCurrency(item.totalPrice)}
+                    </span>
+                  )}
+                  {/* An order can't end up with zero products — the API rejects it too. */}
+                  {canEditItems && order.items.length > 1 && (
+                    <button
+                      type="button"
+                      className="text-xs text-signal hover:underline disabled:opacity-50"
+                      disabled={itemActiveMutation.isPending}
+                      onClick={() => handleRemoveItem(item.id, item.productTypeName)}
+                    >
+                      quitar producto
+                    </button>
+                  )}
+                </div>
               }
             >
               <div className="grid grid-cols-3 gap-2 text-sm text-ink-soft">
@@ -343,11 +469,22 @@ export function OrderDetailPage() {
             </div>
           </div>
 
-          <ul className="mb-4 text-sm text-ink-soft">
+          {/* Payments stay editable in any status — a balance can be settled, or a wrong amount
+              spotted, well after the order was delivered. */}
+          <ul className="mb-4 space-y-1 text-sm text-ink-soft">
             {(order.payments ?? []).map((payment) => (
-              <li key={payment.id}>
-                {formatDate(payment.date)} — {formatCurrency(payment.amount)} ({payment.method})
-                {payment.note ? ` — ${payment.note}` : ""}
+              <li key={payment.id} className="flex items-center gap-2">
+                <span>
+                  {formatDate(payment.date)} — {formatCurrency(payment.amount)} ({payment.method})
+                  {payment.note ? ` — ${payment.note}` : ""}
+                </span>
+                <button
+                  type="button"
+                  className="text-xs text-accent hover:underline"
+                  onClick={() => openPaymentEdit(payment)}
+                >
+                  editar
+                </button>
               </li>
             ))}
             {(order.payments ?? []).length === 0 && (
@@ -388,6 +525,122 @@ export function OrderDetailPage() {
           </form>
         </Card>
       )}
+
+      <Modal
+        open={addingItem}
+        title={`Agregar producto a la orden #${order.number}`}
+        onClose={() => setAddingItem(false)}
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (itemDraft.productTypeId) addItemMutation.mutate();
+          }}
+        >
+          <OrderItemFields
+            draft={itemDraft}
+            productTypes={productTypes}
+            categories={productCategories}
+            attributeCatalogs={attributeCatalogs}
+            showDeliveryDate
+            onChange={(patch) => setItemDraft({ ...itemDraft, ...patch })}
+          />
+          <p className="mt-4 text-xs text-ink-soft/70">
+            El producto se agrega al precio de lista actual, que puede diferir del que tenía cuando
+            se creó la orden.
+          </p>
+          {addItemMutation.isError && (
+            <p className="mt-2 text-xs text-signal">
+              {addItemMutation.error instanceof Error
+                ? addItemMutation.error.message
+                : "No se pudo agregar el producto."}
+            </p>
+          )}
+          <div className="mt-4 flex justify-end gap-2">
+            <SecondaryButton type="button" onClick={() => setAddingItem(false)}>
+              Cancelar
+            </SecondaryButton>
+            <PrimaryButton
+              type="submit"
+              disabled={addItemMutation.isPending || !itemDraft.productTypeId}
+            >
+              Agregar producto
+            </PrimaryButton>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={!!editingPayment}
+        title="Editar pago"
+        onClose={() => setEditingPayment(null)}
+        width="max-w-lg"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (paymentEdit.amount) editPaymentMutation.mutate();
+          }}
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FieldLabel>Monto</FieldLabel>
+              <TextInput
+                type="text"
+                inputMode="decimal"
+                required
+                value={paymentEdit.amount}
+                onChange={(e) => {
+                  if (isNumericInput(e.target.value) && respectsMinimum(e.target.value)) {
+                    setPaymentEdit({ ...paymentEdit, amount: e.target.value });
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <FieldLabel>Método</FieldLabel>
+              <Select
+                value={paymentEdit.method}
+                onChange={(e) => setPaymentEdit({ ...paymentEdit, method: e.target.value })}
+              >
+                {/* The payment's own method is listed even if it was deactivated since, so editing
+                    the amount doesn't silently switch it to another method. */}
+                {!activeMethods.some((method) => method.name === paymentEdit.method) &&
+                  paymentEdit.method && (
+                    <option value={paymentEdit.method}>{paymentEdit.method}</option>
+                  )}
+                {activeMethods.map((method) => (
+                  <option key={method.id} value={method.name}>
+                    {method.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="col-span-2">
+              <FieldLabel>Comentario</FieldLabel>
+              <TextInput
+                value={paymentEdit.note}
+                onChange={(e) => setPaymentEdit({ ...paymentEdit, note: e.target.value })}
+              />
+            </div>
+          </div>
+          {editPaymentMutation.isError && (
+            <p className="mt-2 text-xs text-signal">
+              {editPaymentMutation.error instanceof Error
+                ? editPaymentMutation.error.message
+                : "No se pudo actualizar el pago."}
+            </p>
+          )}
+          <div className="mt-4 flex justify-end gap-2">
+            <SecondaryButton type="button" onClick={() => setEditingPayment(null)}>
+              Cancelar
+            </SecondaryButton>
+            <PrimaryButton type="submit" disabled={editPaymentMutation.isPending}>
+              Guardar cambios
+            </PrimaryButton>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

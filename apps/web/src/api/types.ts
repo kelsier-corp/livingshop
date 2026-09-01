@@ -118,6 +118,9 @@ export interface OrderItem {
   deliveryDate: string;
   attributes: AttributeValues;
   factoryNotes: string | null;
+  // Always true on anything the API returns — items taken off an order are filtered out server
+  // side. Kept on the type so the shape matches the API response.
+  active?: boolean;
   attachments: Attachment[];
   productionStages: ProductionStageStatus[];
 }

@@ -20,6 +20,12 @@ export const orderStatusInputSchema = z.object({
   status: z.enum(ORDER_STATUSES),
 });
 
+// Taking a product off an order is a soft removal, so it's an update of the item's active flag
+// rather than a DELETE — which also means the same route can put an item back on the order.
+export const orderItemActiveInputSchema = z.object({
+  active: z.boolean(),
+});
+
 export const paymentInputSchema = z.object({
   amount: z.number().positive(),
   method: z.string().trim().min(1),

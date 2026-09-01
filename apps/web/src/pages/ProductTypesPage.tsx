@@ -29,6 +29,7 @@ import {
   TextInput,
 } from "@/components/ui";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { formatCurrency } from "@/utils/currency";
 import { isNumericInput, respectsMinimum } from "@/utils/number";
 import { ProductCategoriesTab } from "./ProductCategoriesTab";
 
@@ -49,14 +50,6 @@ function emptyForm(): ProductTypeInput {
     includeInFactorySheet: true,
     attributeDefinitions: [],
   };
-}
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  });
 }
 
 export function ProductTypesPage() {
