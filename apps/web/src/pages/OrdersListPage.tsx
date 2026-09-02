@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchOrders } from "@/api/orders";
 import { Order } from "@/api/types";
+import { useCurrentUser } from "@/auth/CurrentUserContext";
 import { DataTable, DataTableColumn, DataTableSort } from "@/components/DataTable";
 import { OrderStatusBadge } from "@/components/OrderStatusBadge";
 import {
@@ -33,6 +34,8 @@ const DEFAULT_SORT_BY = "date";
 const DEFAULT_SORT_DIRECTION = "desc";
 
 export function OrdersListPage() {
+  const { currentUser } = useCurrentUser();
+  const canCreateOrder = currentUser?.role !== "factory";
   const [page, setPage] = useState(1);
   const [numberFilter, setNumberFilter] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
@@ -107,36 +110,29 @@ export function OrdersListPage() {
     {
       key: "number",
       header: "N.º",
-      width: "7%",
+      width: "8%",
       sortKey: "number",
       render: (order) => <span className="font-mono font-medium text-ink">#{order.number}</span>,
     },
-    { key: "date", header: "Fecha", width: "10%", render: (order) => formatDate(order.date) },
+    { key: "date", header: "Fecha", width: "12%", render: (order) => formatDate(order.date) },
     {
       key: "customer",
       header: "Cliente",
-      width: "16%",
+      width: "25%",
       truncate: true,
       render: (order) => order.customerFullName,
     },
     {
       key: "delivery",
       header: "Entrega",
-      width: "10%",
+      width: "13%",
       sortKey: "deliveryDate",
       render: (order) => formatDate(earliestDelivery(order.items)),
     },
     {
-      key: "products",
-      width: "21%",
-      header: "Productos",
-      truncate: true,
-      render: (order) => order.items.map((item) => item.productTypeName).join(", "),
-    },
-    {
       key: "total",
       header: "Total",
-      width: "12%",
+      width: "14%",
       align: "right",
       render: (order) => (
         <span className="font-mono">
@@ -147,13 +143,13 @@ export function OrdersListPage() {
     {
       key: "status",
       header: "Estado",
-      width: "12%",
+      width: "14%",
       render: (order) => <OrderStatusBadge status={order.status} />,
     },
     {
       key: "actions",
       header: "",
-      width: "12%",
+      width: "14%",
       align: "right",
       render: (order) => (
         <Link to={`/orders/${order.id}`} className="text-sm text-accent hover:underline">
@@ -168,9 +164,11 @@ export function OrdersListPage() {
       <PageHeader
         title="Órdenes"
         actions={
-          <Link to="/orders/new">
-            <PrimaryButton>Nueva orden</PrimaryButton>
-          </Link>
+          canCreateOrder && (
+            <Link to="/orders/new">
+              <PrimaryButton>Nueva orden</PrimaryButton>
+            </Link>
+          )
         }
       />
 

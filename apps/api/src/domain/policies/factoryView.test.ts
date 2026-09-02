@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { Order, OrderItem } from "../entities/Order";
+import { OrderItem } from "../entities/Order";
 import { OrderItemWithContext } from "../entities/Production";
-import { toFactoryOrderView, toFactoryProductionItemView } from "./factoryView";
+import { toFactoryProductionItemView } from "./factoryView";
 
 function buildItem(overrides: Partial<OrderItem> = {}): OrderItem {
   return {
@@ -23,66 +23,14 @@ function buildItem(overrides: Partial<OrderItem> = {}): OrderItem {
   };
 }
 
-function buildOrder(overrides: Partial<Order> = {}): Order {
-  return {
-    id: "order-1",
-    number: 1,
-    date: new Date("2026-01-01"),
-    printedAt: null,
-    customerId: "customer-1",
-    customerFullName: "Ana Test",
-    salespersonId: "user-1",
-    status: "draft",
-    notes: null,
-    items: [buildItem()],
-    payments: [
-      {
-        id: "payment-1",
-        orderId: "order-1",
-        date: new Date("2026-01-05"),
-        amount: 500,
-        method: "Efectivo",
-        feePct: null,
-        note: null,
-      },
-    ],
-    ...overrides,
-  };
-}
-
-describe("toFactoryOrderView", () => {
-  it("strips payments entirely, since factory users never see money", () => {
-    const view = toFactoryOrderView(buildOrder());
-    expect(view).not.toHaveProperty("payments");
-  });
-
-  it("strips unitPrice and totalPrice from every item", () => {
-    const view = toFactoryOrderView(buildOrder());
-    for (const item of view.items) {
-      expect(item).not.toHaveProperty("unitPrice");
-      expect(item).not.toHaveProperty("totalPrice");
-    }
-  });
-
-  it("keeps every other item field intact", () => {
-    const item = buildItem({ factoryNotes: "Reforzar patas" });
-    const view = toFactoryOrderView(buildOrder({ items: [item] }));
-    expect(view.items[0]).toMatchObject({
-      id: item.id,
-      productTypeId: item.productTypeId,
-      quantity: item.quantity,
-      factoryNotes: "Reforzar patas",
-    });
-  });
-});
-
 function buildItemWithContext(overrides: Partial<OrderItemWithContext> = {}): OrderItemWithContext {
   return {
     ...buildItem(),
     orderNumber: 1,
     orderDate: new Date("2026-01-01"),
-    orderStatus: "confirmed",
+    orderStatus: "draft",
     customerFullName: "Ana Test",
+    needsReprint: false,
     ...overrides,
   };
 }

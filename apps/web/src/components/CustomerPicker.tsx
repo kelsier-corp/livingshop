@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { CustomerInput, createCustomer, fetchCustomers } from "@/api/customers";
+import { useEffect, useState } from "react";
+import { CustomerInput, createCustomer, fetchCustomer, fetchCustomers } from "@/api/customers";
 import { Customer } from "@/api/types";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "./ui";
@@ -28,6 +28,7 @@ export function CustomerPicker({ selectedCustomerId, onSelect }: Props) {
   const [showNewForm, setShowNewForm] = useState(false);
   const [newCustomer, setNewCustomer] = useState<CustomerInput>(EMPTY_NEW_CUSTOMER);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
   const { data } = useQuery({
     queryKey: ["customers-picker", debouncedQuery],
@@ -35,6 +36,25 @@ export function CustomerPicker({ selectedCustomerId, onSelect }: Props) {
     enabled: debouncedQuery.trim().length > 0,
   });
   const matches = data?.items ?? [];
+
+  // selectedCustomerId can arrive already set without going through handlePick — e.g. a restored
+  // draft — so it needs its own lookup to show who's selected instead of an empty-looking picker.
+  const { data: hydratedCustomer, isError: hydrationFailed } = useQuery({
+    queryKey: ["customer", selectedCustomerId],
+    queryFn: () => fetchCustomer(selectedCustomerId),
+    enabled: !!selectedCustomerId && selectedCustomer?.id !== selectedCustomerId,
+  });
+
+  useEffect(() => {
+    if (hydratedCustomer) setSelectedCustomer(hydratedCustomer);
+  }, [hydratedCustomer]);
+
+  useEffect(() => {
+    if (hydrationFailed) {
+      setNotFound(true);
+      onSelect("");
+    }
+  }, [hydrationFailed, onSelect]);
 
   const createMutation = useMutation({
     mutationFn: createCustomer,
@@ -50,6 +70,7 @@ export function CustomerPicker({ selectedCustomerId, onSelect }: Props) {
 
   function handlePick(customer: Customer) {
     setSelectedCustomer(customer);
+    setNotFound(false);
     onSelect(customer.id);
     setQuery("");
   }
@@ -59,7 +80,7 @@ export function CustomerPicker({ selectedCustomerId, onSelect }: Props) {
     onSelect("");
   }
 
-  if (selectedCustomerId && selectedCustomer) {
+  if (selectedCustomerId && selectedCustomer && selectedCustomer.id === selectedCustomerId) {
     return (
       <div className="flex items-center justify-between rounded-sm border border-line bg-paper px-3 py-2">
         <div>
@@ -80,10 +101,18 @@ export function CustomerPicker({ selectedCustomerId, onSelect }: Props) {
 
   return (
     <div className="relative">
+      {notFound && (
+        <p className="mb-1 text-xs text-signal">
+          El cliente seleccionado ya no existe. Elegí otro.
+        </p>
+      )}
       <TextInput
         placeholder="Buscar cliente por nombre, teléfono o email…"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => {
+          setNotFound(false);
+          setQuery(e.target.value);
+        }}
       />
 
       {query.trim() && !showNewForm ? (

@@ -1,18 +1,8 @@
-import { Order, OrderItem } from "../entities/Order";
 import { OrderItemWithContext } from "../entities/Production";
 
-export type FactoryOrderItemView = Omit<OrderItem, "unitPrice" | "totalPrice">;
-export type FactoryOrderView = Omit<Order, "items" | "payments"> & {
-  items: FactoryOrderItemView[];
-};
-
-export function toFactoryOrderView(order: Order): FactoryOrderView {
-  const { payments, items, ...rest } = order;
-  return {
-    ...rest,
-    items: items.map(({ unitPrice, totalPrice, ...item }) => item),
-  };
-}
+// Factory can now see an order's full detail (including pricing and payments) via /orders —
+// they just can't edit any of it. The production board is the only surface left that still
+// hides pricing from factory (see toFactoryProductionItemView below).
 
 export type FactoryProductionItemView = Omit<OrderItemWithContext, "unitPrice" | "totalPrice">;
 

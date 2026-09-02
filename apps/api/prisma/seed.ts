@@ -326,7 +326,7 @@ async function main() {
       data: {
         customerId: customers.Paula.id,
         salespersonId: salesperson.id,
-        status: "confirmed",
+        status: "draft",
         notes: "Precio de contado // Promo BBVA 3 y 6 cuotas (avisar las 6) // Flete no incluido",
         items: {
           create: [
@@ -422,7 +422,7 @@ async function main() {
       customer: customers.Lucía,
       orderDate: daysAgo(10),
       deliveryDate: daysFromNow(20),
-      status: "confirmed" as const,
+      status: "draft" as const,
       productType: sofaType,
       quantity: 1,
       paid: false,
@@ -431,7 +431,7 @@ async function main() {
       customer: customers.Martín,
       orderDate: daysAgo(6),
       deliveryDate: daysFromNow(25),
-      status: "confirmed" as const,
+      status: "draft" as const,
       productType: almohadonType,
       quantity: 4,
       paid: true,
@@ -440,7 +440,7 @@ async function main() {
       customer: customers.Sofía,
       orderDate: daysAgo(4),
       deliveryDate: daysFromNow(3),
-      status: "cancelled" as const,
+      status: "voided" as const,
       productType: berlinType,
       quantity: 1,
       paid: false,

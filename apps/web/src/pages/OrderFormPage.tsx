@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchAllAttributeCatalogs } from "@/api/attributeCatalogs";
 import { OrderInput, createOrder } from "@/api/orders";
@@ -39,6 +39,45 @@ function emptyItem(deliveryDate: string): ItemDraft {
   return { key: crypto.randomUUID(), ...emptyOrderItemDraft(deliveryDate) };
 }
 
+// Client-side only: there's no order id yet while the form is being filled out, so recovering an
+// interrupted "crear orden" (reload, accidental navigation) has to live in localStorage rather
+// than the backend.
+const DRAFT_STORAGE_KEY = "livingshop:order-draft";
+
+interface StoredOrderDraft {
+  customerId: string;
+  notes: string;
+  sameDateForAll: boolean;
+  sharedDeliveryDate: string;
+  items: OrderItemDraft[];
+}
+
+function loadStoredDraft(): StoredOrderDraft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as StoredOrderDraft) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredDraft(draft: StoredOrderDraft) {
+  localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+}
+
+function clearStoredDraft() {
+  localStorage.removeItem(DRAFT_STORAGE_KEY);
+}
+
+function itemHasContent(item: OrderItemDraft): boolean {
+  return (
+    !!item.productTypeId ||
+    item.factoryNotes.trim() !== "" ||
+    Object.values(item.attributeValues).some((value) => value.trim() !== "") ||
+    item.customAttributes.some((custom) => custom.key.trim() !== "" || custom.value.trim() !== "")
+  );
+}
+
 export function OrderFormPage() {
   const navigate = useNavigate();
   const { currentUser } = useCurrentUser();
@@ -60,11 +99,52 @@ export function OrderFormPage() {
   const [sameDateForAll, setSameDateForAll] = useState(true);
   const [sharedDeliveryDate, setSharedDeliveryDate] = useState(today());
   const [items, setItems] = useState<ItemDraft[]>([emptyItem(today())]);
+  // Read once on mount, before the autosave effect below has a chance to run — otherwise a fresh
+  // blank form would overwrite the very draft we're about to offer to restore.
+  const [pendingDraft, setPendingDraft] = useState<StoredOrderDraft | null>(() =>
+    loadStoredDraft()
+  );
+
+  const hasContent = customerId !== "" || notes.trim() !== "" || items.some(itemHasContent);
+  // Stays up until the user explicitly resolves it — restore, discard, or a successful submit —
+  // not merely because they started typing. Typing without touching either button isn't a choice,
+  // so it shouldn't silently make the offer disappear.
+  const showDraftRecovery = !!pendingDraft;
+
+  useEffect(() => {
+    if (!hasContent) return;
+    saveStoredDraft({
+      customerId,
+      notes,
+      sameDateForAll,
+      sharedDeliveryDate,
+      items: items.map(({ key: _key, ...rest }) => rest),
+    });
+  }, [customerId, notes, sameDateForAll, sharedDeliveryDate, items, hasContent]);
 
   const createMutation = useMutation({
     mutationFn: createOrder,
-    onSuccess: (order) => navigate(`/orders/${order.id}`),
+    onSuccess: (order) => {
+      clearStoredDraft();
+      setPendingDraft(null);
+      navigate(`/orders/${order.id}`);
+    },
   });
+
+  function restoreDraft() {
+    if (!pendingDraft) return;
+    setCustomerId(pendingDraft.customerId);
+    setNotes(pendingDraft.notes);
+    setSameDateForAll(pendingDraft.sameDateForAll);
+    setSharedDeliveryDate(pendingDraft.sharedDeliveryDate);
+    setItems(pendingDraft.items.map((item) => ({ ...item, key: crypto.randomUUID() })));
+    setPendingDraft(null);
+  }
+
+  function discardDraft() {
+    clearStoredDraft();
+    setPendingDraft(null);
+  }
 
   function productTypeFor(id: string): ProductType | undefined {
     return productTypes.find((productType) => productType.id === id);
@@ -104,6 +184,22 @@ export function OrderFormPage() {
   return (
     <div>
       <PageHeader title="Nueva orden" />
+
+      {showDraftRecovery && (
+        <Card className="mb-6 flex items-center justify-between gap-4 border-accent/40 bg-accent/5">
+          <p className="text-sm text-ink-soft">
+            Tenés una orden sin terminar guardada en este navegador. ¿Querés retomarla?
+          </p>
+          <div className="flex shrink-0 gap-2">
+            <SecondaryButton type="button" onClick={discardDraft}>
+              Descartar
+            </SecondaryButton>
+            <PrimaryButton type="button" onClick={restoreDraft}>
+              Restaurar borrador
+            </PrimaryButton>
+          </div>
+        </Card>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
@@ -172,6 +268,14 @@ export function OrderFormPage() {
             </Card>
           );
         })}
+
+        {createMutation.isError && (
+          <p className="text-sm text-signal">
+            {createMutation.error instanceof Error
+              ? createMutation.error.message
+              : "No se pudo crear la orden."}
+          </p>
+        )}
 
         <div className="flex items-center justify-between">
           <SecondaryButton type="button" onClick={addItem}>

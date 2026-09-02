@@ -68,7 +68,7 @@ export function App() {
         <Route
           path="/orders/new"
           element={
-            <RequireRole roles={ROUTE_ROLES.orders}>
+            <RequireRole roles={ROUTE_ROLES.createOrder}>
               <OrderFormPage />
             </RequireRole>
           }

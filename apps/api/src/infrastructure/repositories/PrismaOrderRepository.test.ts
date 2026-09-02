@@ -143,3 +143,78 @@ describe("PrismaOrderRepository.addPayment", () => {
     });
   });
 });
+
+function buildProductionItemRow(overrides: { updatedAt: Date; orderPrintedAt: Date | null }) {
+  return {
+    id: "item-1",
+    orderId: "order-1",
+    productTypeId: "product-1",
+    quantity: 1,
+    unitPrice: 1000,
+    totalPrice: 1000,
+    deliveryDate: new Date("2026-02-01"),
+    attributes: {},
+    factoryNotes: null,
+    active: true,
+    updatedAt: overrides.updatedAt,
+    productType: { name: "Sillon", sketchUrl: null, includeInFactorySheet: true },
+    attachments: [],
+    productionStages: [],
+    order: {
+      number: 1,
+      date: new Date("2026-01-01"),
+      status: "draft",
+      printedAt: overrides.orderPrintedAt,
+      customer: { firstName: "Ana", lastName: "Test" },
+    },
+  };
+}
+
+describe("PrismaOrderRepository.listAllItemsWithContext — needsReprint", () => {
+  function buildRepositoryWithRow(row: ReturnType<typeof buildProductionItemRow>) {
+    const findMany = vi.fn(async () => [row]);
+    const prisma = { orderItem: { findMany } } as unknown as PrismaClient;
+    return new PrismaOrderRepository(prisma);
+  }
+
+  it("is false when the order was never printed", async () => {
+    const repository = buildRepositoryWithRow(
+      buildProductionItemRow({ updatedAt: new Date("2026-02-01"), orderPrintedAt: null })
+    );
+    const [item] = await repository.listAllItemsWithContext();
+    expect(item.needsReprint).toBe(false);
+  });
+
+  it("is true when the item was edited after the last print", async () => {
+    const repository = buildRepositoryWithRow(
+      buildProductionItemRow({
+        updatedAt: new Date("2026-02-01T10:00:01"),
+        orderPrintedAt: new Date("2026-02-01T10:00:00"),
+      })
+    );
+    const [item] = await repository.listAllItemsWithContext();
+    expect(item.needsReprint).toBe(true);
+  });
+
+  it("is false when the item was edited before the last print", async () => {
+    const repository = buildRepositoryWithRow(
+      buildProductionItemRow({
+        updatedAt: new Date("2026-02-01T09:59:59"),
+        orderPrintedAt: new Date("2026-02-01T10:00:00"),
+      })
+    );
+    const [item] = await repository.listAllItemsWithContext();
+    expect(item.needsReprint).toBe(false);
+  });
+
+  // Same instant doesn't count as "edited after" — an order printed and edited within the same
+  // request/second shouldn't flip this on.
+  it("is false when the edit and the print share the exact same timestamp", async () => {
+    const same = new Date("2026-02-01T10:00:00.000Z");
+    const repository = buildRepositoryWithRow(
+      buildProductionItemRow({ updatedAt: same, orderPrintedAt: same })
+    );
+    const [item] = await repository.listAllItemsWithContext();
+    expect(item.needsReprint).toBe(false);
+  });
+});
