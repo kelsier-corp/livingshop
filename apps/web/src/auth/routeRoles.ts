@@ -8,7 +8,9 @@ export const ROUTE_ROLES = {
   production: ["admin", "sales", "factory"] as UserRole[],
   sales: ["admin", "sales"] as UserRole[],
   customers: ["admin", "sales"] as UserRole[],
-  productTypes: ["admin"] as UserRole[],
-  prices: ["admin"] as UserRole[],
-  attributeCatalogs: ["admin"] as UserRole[],
+  productTypes: ["admin", "sales"] as UserRole[],
+  prices: ["admin", "sales"] as UserRole[],
+  attributeCatalogs: ["admin", "sales"] as UserRole[],
+  // The one exception to "sales has admin parity everywhere" — user management stays admin-only.
+  users: ["admin"] as UserRole[],
 };

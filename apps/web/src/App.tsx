@@ -13,6 +13,7 @@ import { ProductionPage } from "@/pages/ProductionPage";
 import { PricesPage } from "@/pages/PricesPage";
 import { ProductTypesPage } from "@/pages/ProductTypesPage";
 import { SalesPage } from "@/pages/SalesPage";
+import { UsersPage } from "@/pages/UsersPage";
 
 function HomeRedirect() {
   const { currentUser, isLoading } = useCurrentUser();
@@ -94,6 +95,14 @@ export function App() {
           element={
             <RequireRole roles={ROUTE_ROLES.sales}>
               <SalesPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <RequireRole roles={ROUTE_ROLES.users}>
+              <UsersPage />
             </RequireRole>
           }
         />

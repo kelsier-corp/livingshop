@@ -1,10 +1,5 @@
 import { useCurrentUser } from "@/auth/CurrentUserContext";
-
-const ROLE_LABEL: Record<string, string> = {
-  admin: "Admin",
-  sales: "Ventas",
-  factory: "Fábrica",
-};
+import { ROLE_LABEL } from "./RoleBadge";
 
 export function UserSwitcher() {
   const { users, currentUser, selectUser } = useCurrentUser();
