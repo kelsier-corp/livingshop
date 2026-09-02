@@ -106,9 +106,10 @@ export function OrderFormPage() {
   );
 
   const hasContent = customerId !== "" || notes.trim() !== "" || items.some(itemHasContent);
-  // Once the live form has content of its own (typed fresh, or just restored), the recovery row
-  // has nothing left to offer — the localStorage slot now belongs to whatever's on screen.
-  const showDraftRecovery = !!pendingDraft && !hasContent;
+  // Stays up until the user explicitly resolves it — restore, discard, or a successful submit —
+  // not merely because they started typing. Typing without touching either button isn't a choice,
+  // so it shouldn't silently make the offer disappear.
+  const showDraftRecovery = !!pendingDraft;
 
   useEffect(() => {
     if (!hasContent) return;
@@ -125,6 +126,7 @@ export function OrderFormPage() {
     mutationFn: createOrder,
     onSuccess: (order) => {
       clearStoredDraft();
+      setPendingDraft(null);
       navigate(`/orders/${order.id}`);
     },
   });
