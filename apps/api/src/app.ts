@@ -45,7 +45,7 @@ import { createProductCategoriesRouter } from "@presentation/http/routes/product
 import { createProductionRouter } from "@presentation/http/routes/production.routes";
 import { createProductTypesRouter } from "@presentation/http/routes/product-types.routes";
 import { createSalesRouter } from "@presentation/http/routes/sales.routes";
-import { createUsersRouter } from "@presentation/http/routes/users.routes";
+import { createAdminUsersRouter, createUsersRouter } from "@presentation/http/routes/users.routes";
 
 export function createApp(): Express {
   const userRepository = new PrismaUserRepository(prisma);
@@ -121,6 +121,7 @@ export function createApp(): Express {
   app.use("/api/production", currentUserMiddleware, createProductionRouter(productionController));
   app.use("/api/sales", currentUserMiddleware, createSalesRouter(salesController));
   app.use("/api/pdf", currentUserMiddleware, createPdfRouter(pdfController));
+  app.use("/api/users", currentUserMiddleware, createAdminUsersRouter(usersController));
 
   app.use(errorHandler);
 

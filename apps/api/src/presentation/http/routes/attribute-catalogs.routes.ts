@@ -7,11 +7,11 @@ export function createAttributeCatalogsRouter(controller: AttributeCatalogsContr
   router.get("/", requireRole("admin", "sales"), controller.list);
   router.get("/all", requireRole("admin", "sales"), controller.listAll);
   router.get("/:id", requireRole("admin", "sales"), controller.getById);
-  router.post("/", requireRole("admin"), controller.create);
-  router.put("/:id", requireRole("admin"), controller.update);
-  router.delete("/:id", requireRole("admin"), controller.remove);
-  router.post("/:id/values", requireRole("admin"), controller.addValue);
-  router.put("/:id/values/:valueId", requireRole("admin"), controller.updateValue);
-  router.delete("/:id/values/:valueId", requireRole("admin"), controller.removeValue);
+  router.post("/", requireRole("admin", "sales"), controller.create);
+  router.put("/:id", requireRole("admin", "sales"), controller.update);
+  router.delete("/:id", requireRole("admin", "sales"), controller.remove);
+  router.post("/:id/values", requireRole("admin", "sales"), controller.addValue);
+  router.put("/:id/values/:valueId", requireRole("admin", "sales"), controller.updateValue);
+  router.delete("/:id/values/:valueId", requireRole("admin", "sales"), controller.removeValue);
   return router;
 }
