@@ -49,21 +49,26 @@ model User {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  ordersAsSalesperson    Order[]                  @relation("SalespersonOrders")
+  ordersAsSalesperson    Order[]                 @relation("SalespersonOrders")
   productionStagesMarked ProductionStageStatus[]
 
   @@map("users")
 }
 
 model Customer {
-  id              String   @id @default(uuid())
-  firstName       String
-  lastName        String
-  deliveryAddress String?
-  mobilePhone     String?
-  phone           String?
-  email           String?
-  createdAt       DateTime @default(now())
+  id                 String   @id @default(uuid())
+  firstName          String
+  lastName           String
+  deliveryAddress    String?
+  mobilePhone        String?
+  phone              String?
+  email              String?
+  taxId              String?
+  invoiceType        String?
+  businessName       String?
+  secondaryPhone     String?
+  invoiceDescription String?
+  createdAt          DateTime @default(now())
 
   orders Order[]
 
@@ -80,14 +85,14 @@ model ProductCategory {
 }
 
 model ProductType {
-  id                    String  @id @default(uuid())
-  name                  String  @unique
+  id                    String            @id @default(uuid())
+  name                  String            @unique
   description           String?
-  basePrice             Decimal @default(0) @db.Decimal(12, 2)
-  active                Boolean @default(true)
+  basePrice             Decimal           @default(0) @db.Decimal(12, 2)
+  active                Boolean           @default(true)
   sketchUrl             String?
   sketchFileName        String?
-  includeInFactorySheet Boolean @default(true)
+  includeInFactorySheet Boolean           @default(true)
   categories            ProductCategory[]
 
   attributeDefinitions AttributeDefinition[]
@@ -107,9 +112,9 @@ model AttributeCatalog {
 }
 
 model AttributeCatalogValue {
-  id                 String  @id @default(uuid())
+  id                 String           @id @default(uuid())
   value              String
-  active             Boolean @default(true)
+  active             Boolean          @default(true)
   attributeCatalogId String
   attributeCatalog   AttributeCatalog @relation(fields: [attributeCatalogId], references: [id], onDelete: Cascade)
 
@@ -118,33 +123,33 @@ model AttributeCatalogValue {
 }
 
 model AttributeDefinition {
-  id                  String             @id @default(uuid())
-  productTypeId       String
-  productType         ProductType        @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
-  name                String
-  dataType            AttributeDataType
-  attributeCatalogId  String?
-  attributeCatalog    AttributeCatalog?  @relation(fields: [attributeCatalogId], references: [id])
-  sortOrder           Int                @default(0)
-  required            Boolean            @default(false)
+  id                 String            @id @default(uuid())
+  productTypeId      String
+  productType        ProductType       @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
+  name               String
+  dataType           AttributeDataType
+  attributeCatalogId String?
+  attributeCatalog   AttributeCatalog? @relation(fields: [attributeCatalogId], references: [id])
+  sortOrder          Int               @default(0)
+  required           Boolean           @default(false)
 
   @@unique([productTypeId, name])
   @@map("attribute_definitions")
 }
 
 model Order {
-  id          String      @id @default(uuid())
-  number      Int         @unique @default(autoincrement())
-  date        DateTime    @default(now())
-  printedAt   DateTime?
-  customerId  String
-  customer    Customer    @relation(fields: [customerId], references: [id])
+  id            String      @id @default(uuid())
+  number        Int         @unique @default(autoincrement())
+  date          DateTime    @default(now())
+  printedAt     DateTime?
+  customerId    String
+  customer      Customer    @relation(fields: [customerId], references: [id])
   salespersonId String
-  salesperson User        @relation("SalespersonOrders", fields: [salespersonId], references: [id])
-  status      OrderStatus @default(draft)
-  notes       String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  salesperson   User        @relation("SalespersonOrders", fields: [salespersonId], references: [id])
+  status        OrderStatus @default(draft)
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   items    OrderItem[]
   payments Payment[]
@@ -153,26 +158,26 @@ model Order {
 }
 
 model OrderItem {
-  id            String   @id @default(uuid())
+  id            String      @id @default(uuid())
   orderId       String
-  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productTypeId String
   productType   ProductType @relation(fields: [productTypeId], references: [id])
-  quantity      Int      @default(1)
-  unitPrice     Decimal  @default(0) @db.Decimal(12, 2)
-  totalPrice    Decimal  @default(0) @db.Decimal(12, 2)
+  quantity      Int         @default(1)
+  unitPrice     Decimal     @default(0) @db.Decimal(12, 2)
+  totalPrice    Decimal     @default(0) @db.Decimal(12, 2)
   deliveryDate  DateTime
-  attributes    Json     @default("{}")
+  attributes    Json        @default("{}")
   factoryNotes  String?
   // Taking a product off an order flips this to false instead of deleting the row: the item
   // carries a price snapshot (see OrderItem's unitPrice/totalPrice) that historical reporting
   // still needs, and the factory may already have printed a sheet listing it. Every read path
   // filters on active, so a removed item disappears from totals, PDFs and the factory board.
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
+  active        Boolean     @default(true)
+  createdAt     DateTime    @default(now())
   // Compared against Order.printedAt to flag when a factory sheet is stale (item edited after the
   // last print) — see PrismaOrderRepository#toOrderItemWithContext.
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime    @updatedAt
 
   attachments      Attachment[]
   productionStages ProductionStageStatus[]
@@ -207,14 +212,14 @@ model ProductionStageStatus {
 }
 
 model Payment {
-  id        String   @id @default(uuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  date      DateTime @default(now())
-  amount    Decimal  @db.Decimal(12, 2)
-  method    String
-  feePct    Decimal? @db.Decimal(5, 2)
-  note      String?
+  id      String   @id @default(uuid())
+  orderId String
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  date    DateTime @default(now())
+  amount  Decimal  @db.Decimal(12, 2)
+  method  String
+  feePct  Decimal? @db.Decimal(5, 2)
+  note    String?
 
   @@map("payments")
 }

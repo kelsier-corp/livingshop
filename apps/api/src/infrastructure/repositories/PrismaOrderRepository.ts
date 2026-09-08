@@ -442,6 +442,9 @@ function toSalesRow(row: SalesOrderRow): SalesRow {
     orderNumber: row.number,
     orderDate: row.date,
     customerFullName: `${row.customer.firstName} ${row.customer.lastName}`,
+    customerTaxId: row.customer.taxId,
+    customerBusinessName: row.customer.businessName,
+    customerInvoiceType: row.customer.invoiceType,
     items: row.items.map((item) => ({
       productTypeName: item.productType.name,
       quantity: item.quantity,

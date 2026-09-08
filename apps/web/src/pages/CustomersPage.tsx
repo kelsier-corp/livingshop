@@ -30,6 +30,11 @@ const EMPTY_FORM: CustomerInput = {
   mobilePhone: "",
   phone: "",
   email: "",
+  taxId: "",
+  invoiceType: "",
+  businessName: "",
+  secondaryPhone: "",
+  invoiceDescription: "",
 };
 
 export function CustomersPage() {
@@ -86,6 +91,11 @@ export function CustomersPage() {
       mobilePhone: customer.mobilePhone ?? "",
       phone: customer.phone ?? "",
       email: customer.email ?? "",
+      taxId: customer.taxId ?? "",
+      invoiceType: customer.invoiceType ?? "",
+      businessName: customer.businessName ?? "",
+      secondaryPhone: customer.secondaryPhone ?? "",
+      invoiceDescription: customer.invoiceDescription ?? "",
     });
     setEditingId(customer.id);
     setShowForm(true);
@@ -218,11 +228,46 @@ export function CustomersPage() {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
           </div>
+          <div>
+            <FieldLabel>Teléfono secundario</FieldLabel>
+            <TextInput
+              value={form.secondaryPhone ?? ""}
+              onChange={(e) => setForm({ ...form, secondaryPhone: e.target.value })}
+            />
+          </div>
           <div className="col-span-2">
             <FieldLabel>Email</FieldLabel>
             <TextInput
               value={form.email ?? ""}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </div>
+          <div>
+            <FieldLabel>CUIT/CUIL/DNI</FieldLabel>
+            <TextInput
+              value={form.taxId ?? ""}
+              onChange={(e) => setForm({ ...form, taxId: e.target.value })}
+            />
+          </div>
+          <div>
+            <FieldLabel>Tipo de factura</FieldLabel>
+            <TextInput
+              value={form.invoiceType ?? ""}
+              onChange={(e) => setForm({ ...form, invoiceType: e.target.value })}
+            />
+          </div>
+          <div className="col-span-2">
+            <FieldLabel>Razón social</FieldLabel>
+            <TextInput
+              value={form.businessName ?? ""}
+              onChange={(e) => setForm({ ...form, businessName: e.target.value })}
+            />
+          </div>
+          <div className="col-span-2">
+            <FieldLabel>Descripción de factura</FieldLabel>
+            <TextInput
+              value={form.invoiceDescription ?? ""}
+              onChange={(e) => setForm({ ...form, invoiceDescription: e.target.value })}
             />
           </div>
           <div className="col-span-2 flex gap-2">

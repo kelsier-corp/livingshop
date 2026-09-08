@@ -13,4 +13,9 @@ export const customerInputSchema = z.object({
   mobilePhone: z.string().trim().optional().nullable(),
   phone: z.string().trim().optional().nullable(),
   email: z.string().trim().optional().nullable(),
+  taxId: z.string().trim().optional().nullable(),
+  invoiceType: z.string().trim().optional().nullable(),
+  businessName: z.string().trim().optional().nullable(),
+  secondaryPhone: z.string().trim().optional().nullable(),
+  invoiceDescription: z.string().trim().optional().nullable(),
 });

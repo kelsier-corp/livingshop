@@ -38,3 +38,7 @@ export function productionSheetFileName(): string {
 export function salesSheetFileName(periodLabel: string): string {
   return `planilla-ventas_${slugify(periodLabel)}_${dateStamp(new Date())}.pdf`;
 }
+
+export function salesExportFileName(): string {
+  return `planilla-ventas-semanal_${dateTimeStamp(new Date())}.xlsx`;
+}

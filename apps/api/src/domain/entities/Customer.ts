@@ -6,6 +6,11 @@ export interface Customer {
   mobilePhone: string | null;
   phone: string | null;
   email: string | null;
+  taxId: string | null;
+  invoiceType: string | null;
+  businessName: string | null;
+  secondaryPhone: string | null;
+  invoiceDescription: string | null;
   createdAt: Date;
 }
 
@@ -16,6 +21,11 @@ export interface CustomerInput {
   mobilePhone?: string | null;
   phone?: string | null;
   email?: string | null;
+  taxId?: string | null;
+  invoiceType?: string | null;
+  businessName?: string | null;
+  secondaryPhone?: string | null;
+  invoiceDescription?: string | null;
 }
 
 export interface CustomerListQuery {
