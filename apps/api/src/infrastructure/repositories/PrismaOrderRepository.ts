@@ -5,6 +5,7 @@ import {
   Order,
   OrderCreateData,
   OrderItem,
+  OrderItemAttributesInput,
   OrderItemCreateData,
   OrderListQuery,
   Payment,
@@ -235,6 +236,29 @@ export class PrismaOrderRepository implements OrderRepository {
     return toOrderDomain(row);
   }
 
+  async updateItemAttributes(
+    orderId: string,
+    itemId: string,
+    data: OrderItemAttributesInput
+  ): Promise<Order> {
+    const row = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        items: {
+          update: {
+            where: { id: itemId },
+            data: {
+              attributes: data.attributes as Prisma.InputJsonValue,
+              factoryNotes: data.factoryNotes ?? null,
+            },
+          },
+        },
+      },
+      include: orderInclude,
+    });
+    return toOrderDomain(row);
+  }
+
   async findItemById(id: string): Promise<OrderItem | null> {
     const row = await this.prisma.orderItem.findUnique({
       where: { id },
@@ -320,7 +344,7 @@ export class PrismaOrderRepository implements OrderRepository {
     const where: Prisma.OrderItemWhereInput = {
       active: true,
       order: {
-        status: { in: ["confirmed", "in_production"] },
+        status: { in: ["draft", "in_production"] },
         ...(query.number !== undefined ? { number: query.number } : {}),
       },
     };
@@ -354,7 +378,7 @@ export class PrismaOrderRepository implements OrderRepository {
 
   async listAllItemsWithContext(): Promise<OrderItemWithContext[]> {
     const rows = await this.prisma.orderItem.findMany({
-      where: { active: true, order: { status: { in: ["confirmed", "in_production"] } } },
+      where: { active: true, order: { status: { in: ["draft", "in_production"] } } },
       include: productionItemInclude,
       orderBy: [{ deliveryDate: "asc" }, { createdAt: "asc" }],
     });
@@ -406,6 +430,7 @@ function toOrderItemWithContext(row: ProductionItemRow): OrderItemWithContext {
     orderDate: row.order.date,
     orderStatus: row.order.status as OrderStatus,
     customerFullName: `${row.order.customer.firstName} ${row.order.customer.lastName}`,
+    needsReprint: row.order.printedAt !== null && row.updatedAt > row.order.printedAt,
   };
 }
 

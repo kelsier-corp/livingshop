@@ -26,6 +26,13 @@ export const orderItemActiveInputSchema = z.object({
   active: z.boolean(),
 });
 
+// Editing an item's attributes never touches productTypeId/quantity/deliveryDate — see the
+// comment on OrderItemAttributesInput.
+export const orderItemAttributesInputSchema = z.object({
+  attributes: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
+  factoryNotes: z.string().trim().optional().nullable(),
+});
+
 export const paymentInputSchema = z.object({
   amount: z.number().positive(),
   method: z.string().trim().min(1),

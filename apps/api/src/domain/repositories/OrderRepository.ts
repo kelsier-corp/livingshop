@@ -4,6 +4,7 @@ import {
   Order,
   OrderCreateData,
   OrderItem,
+  OrderItemAttributesInput,
   OrderItemCreateData,
   OrderListQuery,
   Payment,
@@ -24,6 +25,11 @@ export interface OrderRepository {
   // trip, the same way create() already does.
   addItem(orderId: string, data: OrderItemCreateData): Promise<Order>;
   setItemActive(orderId: string, itemId: string, active: boolean): Promise<Order>;
+  updateItemAttributes(
+    orderId: string,
+    itemId: string,
+    data: OrderItemAttributesInput
+  ): Promise<Order>;
   // Reads an item regardless of its active flag, so the service can tell "not on this order" apart
   // from "already taken off it".
   findItemById(id: string): Promise<OrderItem | null>;

@@ -33,7 +33,7 @@ function buildOrder(): Order {
     customerId: "customer-1",
     customerFullName: "Ana Test",
     salespersonId: "user-1",
-    status: "confirmed",
+    status: "draft",
     notes: null,
     items: [buildItem()],
     payments: [
@@ -72,81 +72,86 @@ const validItemBody = {
   attributes: {},
 };
 
-// Both routes are gated to admin/sales in orders.routes.ts today, so a factory user never
-// actually reaches these handlers. These tests pin the response shape to the caller's role
-// anyway, so loosening that gate later (e.g. to let the factory confirm a product swap) can't
-// silently start leaking unitPrice/totalPrice the way a hardcoded `false` would have.
-describe("OrdersController item endpoints — response shape follows the caller's role", () => {
+// Factory can view full order detail (pricing and payments) now, same as admin/sales — the only
+// thing that keeps factory from writing to an order is route-level requireRole(...) in
+// orders.routes.ts, not any response-shaping in this controller. These tests just pin that every
+// handler always includes totals/payments, regardless of who's asking.
+describe("OrdersController — every handler returns the full order", () => {
   let orderService: OrderService;
   let controller: OrdersController;
 
   beforeEach(() => {
     orderService = {
+      getById: vi.fn(async () => buildOrder()),
       addItem: vi.fn(async () => buildOrder()),
       setItemActive: vi.fn(async () => buildOrder()),
+      updateItemAttributes: vi.fn(async () => buildOrder()),
+      updateStatus: vi.fn(async () => buildOrder()),
     } as unknown as OrderService;
     controller = new OrdersController(orderService);
   });
 
-  describe("addItem", () => {
-    it("returns the full order with totals for a sales user", async () => {
+  it.each(["admin", "sales", "factory"] as const)(
+    "getById includes totals and payments for %s",
+    async (role) => {
       const { res, json } = buildResponse();
-      await controller.addItem(buildRequest("sales", { body: validItemBody }), res);
+      await controller.getById(buildRequest(role), res);
 
       const payload = json.mock.calls[0][0];
       expect(payload.totals).toBeDefined();
       expect(payload.payments).toBeDefined();
-      expect(payload.items[0].totalPrice).toBe(1000);
-    });
+      expect(payload.items[0].unitPrice).toBe(1000);
+    }
+  );
 
-    it("returns the factory-safe view for a factory user", async () => {
+  it.each(["admin", "sales", "factory"] as const)(
+    "addItem includes totals and payments for %s",
+    async (role) => {
       const { res, json } = buildResponse();
-      await controller.addItem(buildRequest("factory", { body: validItemBody }), res);
-
-      const payload = json.mock.calls[0][0];
-      expect(payload).not.toHaveProperty("payments");
-      expect(payload).not.toHaveProperty("totals");
-      expect(payload.items[0]).not.toHaveProperty("unitPrice");
-      expect(payload.items[0]).not.toHaveProperty("totalPrice");
-    });
-  });
-
-  describe("setItemActive", () => {
-    it("returns the full order with totals for a sales user", async () => {
-      const { res, json } = buildResponse();
-      await controller.setItemActive(buildRequest("sales", { body: { active: false } }), res);
+      await controller.addItem(buildRequest(role, { body: validItemBody }), res);
 
       const payload = json.mock.calls[0][0];
       expect(payload.totals).toBeDefined();
       expect(payload.payments).toBeDefined();
-      expect(payload.items[0].totalPrice).toBe(1000);
-    });
+    }
+  );
 
-    it("returns the factory-safe view for a factory user", async () => {
+  it.each(["admin", "sales", "factory"] as const)(
+    "setItemActive includes totals and payments for %s",
+    async (role) => {
       const { res, json } = buildResponse();
-      await controller.setItemActive(buildRequest("factory", { body: { active: false } }), res);
+      await controller.setItemActive(buildRequest(role, { body: { active: false } }), res);
 
       const payload = json.mock.calls[0][0];
-      expect(payload).not.toHaveProperty("payments");
-      expect(payload).not.toHaveProperty("totals");
-      expect(payload.items[0]).not.toHaveProperty("unitPrice");
-      expect(payload.items[0]).not.toHaveProperty("totalPrice");
+      expect(payload.totals).toBeDefined();
+      expect(payload.payments).toBeDefined();
+    }
+  );
+
+  it("updateItemAttributes forwards attributes and factoryNotes, and includes totals", async () => {
+    const { res, json } = buildResponse();
+    await controller.updateItemAttributes(
+      buildRequest("sales", { body: { attributes: { Tela: "Pana" }, factoryNotes: "Ojo" } }),
+      res
+    );
+
+    expect(orderService.updateItemAttributes).toHaveBeenCalledWith("order-1", "item-1", {
+      attributes: { Tela: "Pana" },
+      factoryNotes: "Ojo",
     });
+    const payload = json.mock.calls[0][0];
+    expect(payload.totals).toBeDefined();
   });
 
-  // getById already derived isFactory from the role; keeping it in the same suite documents that
-  // the item endpoints now agree with it rather than each handler deciding on its own.
-  describe("getById", () => {
-    it("agrees with the item endpoints for a factory user", async () => {
-      orderService = {
-        getById: vi.fn(async () => buildOrder()),
-      } as unknown as OrderService;
-      const { res, json } = buildResponse();
-      await new OrdersController(orderService).getById(buildRequest("factory"), res);
+  it("updateStatus includes totals and payments regardless of who's asking", async () => {
+    const { res, json } = buildResponse();
+    await controller.updateStatus(
+      buildRequest("factory", { body: { status: "in_production" } }),
+      res
+    );
 
-      const payload = json.mock.calls[0][0];
-      expect(payload).not.toHaveProperty("payments");
-      expect(payload.items[0]).not.toHaveProperty("totalPrice");
-    });
+    const payload = json.mock.calls[0][0];
+    expect(payload.totals).toBeDefined();
+    expect(payload.payments).toBeDefined();
   });
 });

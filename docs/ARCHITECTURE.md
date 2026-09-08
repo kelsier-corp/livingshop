@@ -69,7 +69,7 @@ erDiagram
         int number
         date date
         date printedAt
-        string status "draft | confirmed | in_production | delivered | cancelled"
+        string status "draft | in_production | delivered | voided"
         string notes
     }
     ORDER_ITEM {
@@ -122,7 +122,7 @@ Dependency direction is strictly one-way: `presentation → application → doma
 domain/
   entities/        plain TS interfaces + enums (no behavior)
   repositories/     interfaces only — the "ports" every Prisma*Repository implements
-  policies/         pure functions with real business rules (order totals, factory-safe view)
+  policies/         pure functions with real business rules (order totals, production-board pricing strip)
   errors/           DomainError subclasses, thrown from application/domain, mapped to HTTP by errorHandler
 
 application/<module>/<Module>Service.ts
@@ -154,7 +154,7 @@ There's no dependency-injection framework: `app.ts` is the single place where co
 2. The controller parses the body with `orderInputSchema` (Zod) and calls `OrderService.create`.
 3. `OrderService.buildCreateData` validates the customer/salesperson/product types exist, checks required attributes per item, and resolves each item's `unitPrice`/`totalPrice` from the current `ProductType.basePrice`.
 4. `PrismaOrderRepository.create` persists the order + items in one Prisma call.
-5. The controller re-shapes the result: factory-role callers get `toFactoryOrderView(order)` (drops pricing/payments); everyone else gets the order plus `computeOrderTotals(order)`.
+5. The controller returns the order plus `computeOrderTotals(order)` — the same full shape (pricing and payments included) regardless of the caller's role; `requireRole` is what actually keeps `factory` off this route.
 
 ### Pagination shape
 
@@ -177,7 +177,7 @@ Two categories of exception, both deliberate:
 
 `CustomerPicker` searches the paginated `GET /customers?search=...` endpoint itself (debounced), rather than filtering a fully-loaded customer list client-side — the same way `OrderDetailPage` fetches a single customer by id (`GET /customers/:id`) instead of loading everyone to find one. Both matter because customer count scales with order volume.
 
-The production board (`GET /production/board`) filters to `status: { in: ["confirmed", "in_production"] }` — draft orders aren't committed yet, delivered/cancelled ones are done — so factory staff only ever see active work.
+The production board (`GET /production/board`) filters to `status: { in: ["draft", "in_production"] }` — delivered/voided orders are done — so factory staff only ever see active work.
 
 ## Web layering (`apps/web/src`)
 

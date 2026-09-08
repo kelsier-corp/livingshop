@@ -20,10 +20,9 @@ enum AttributeDataType {
 
 enum OrderStatus {
   draft
-  confirmed
   in_production
   delivered
-  cancelled
+  voided
 }
 
 enum ProductionStage {
@@ -171,6 +170,9 @@ model OrderItem {
   // filters on active, so a removed item disappears from totals, PDFs and the factory board.
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
+  // Compared against Order.printedAt to flag when a factory sheet is stale (item edited after the
+  // last print) — see PrismaOrderRepository#toOrderItemWithContext.
+  updatedAt     DateTime @updatedAt
 
   attachments      Attachment[]
   productionStages ProductionStageStatus[]
