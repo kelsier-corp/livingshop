@@ -18,3 +18,8 @@ export interface ProductionListQuery {
   deliveryDate?: Date;
   number?: number;
 }
+
+export interface ProductionSheetQuery {
+  deliveryDateFrom?: Date;
+  deliveryDateTo?: Date;
+}

@@ -1,13 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { PRODUCTION_STAGE_LABEL, PRODUCTION_STAGES } from "@/api/constants";
-import { pdfUrl } from "@/api/client";
+import { FormEvent, useState } from "react";
+import { pdfUrl, toQueryString } from "@/api/client";
 import { updateOrderStatus } from "@/api/orders";
-import { fetchProductionBoard, toggleProductionStage } from "@/api/production";
-import { OrderItemWithContext, OrderStatus, ProductionStage } from "@/api/types";
+import { fetchProductionBoard } from "@/api/production";
+import { OrderItemWithContext, OrderStatus } from "@/api/types";
 import { ORDER_STATUS_LABEL, ORDER_STATUSES } from "@/components/OrderStatusBadge";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
-import { Card, FieldLabel, PageHeader, Select, SecondaryButton, TextInput } from "@/components/ui";
+import { Modal } from "@/components/Modal";
+import {
+  Card,
+  FieldLabel,
+  PageHeader,
+  PrimaryButton,
+  Select,
+  SecondaryButton,
+  TextInput,
+} from "@/components/ui";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { isNumericInput, respectsMinimum } from "@/utils/number";
 
@@ -23,7 +31,9 @@ export function ProductionPage() {
   const [page, setPage] = useState(1);
   const [deliveryDateFilter, setDeliveryDateFilter] = useState("");
   const [numberFilter, setNumberFilter] = useState("");
-  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [printDateFrom, setPrintDateFrom] = useState("");
+  const [printDateTo, setPrintDateTo] = useState("");
   const debouncedNumberFilter = useDebouncedValue(numberFilter);
   const { data, isLoading } = useQuery({
     queryKey: ["production-board", page, deliveryDateFilter, debouncedNumberFilter],
@@ -34,19 +44,6 @@ export function ProductionPage() {
         deliveryDate: deliveryDateFilter || undefined,
         number: debouncedNumberFilter ? Number(debouncedNumberFilter) : undefined,
       }),
-  });
-
-  const toggleMutation = useMutation({
-    mutationFn: ({
-      orderItemId,
-      stage,
-      completed,
-    }: {
-      orderItemId: string;
-      stage: ProductionStage;
-      completed: boolean;
-    }) => toggleProductionStage(orderItemId, stage, completed),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["production-board"] }),
   });
 
   const statusMutation = useMutation({
@@ -114,12 +111,6 @@ export function ProductionPage() {
       align: "right",
       render: (row) => (
         <div className="flex justify-end gap-2">
-          <SecondaryButton
-            type="button"
-            onClick={() => setExpandedRowId(expandedRowId === row.id ? null : row.id)}
-          >
-            {expandedRowId === row.id ? "Ocultar progreso" : "Ver progreso"}
-          </SecondaryButton>
           {row.needsReprint && (
             <span
               className="text-base text-signal"
@@ -140,26 +131,14 @@ export function ProductionPage() {
     },
   ];
 
-  function renderProgress(row: OrderItemWithContext) {
-    return (
-      <div className="flex flex-wrap gap-x-6 gap-y-2">
-        {PRODUCTION_STAGES.map((stage) => {
-          const stageStatus = row.productionStages.find((s) => s.stage === stage);
-          return (
-            <label key={stage} className="flex items-center gap-2 text-sm text-ink-soft">
-              <input
-                type="checkbox"
-                checked={stageStatus?.completed ?? false}
-                onChange={(e) =>
-                  toggleMutation.mutate({ orderItemId: row.id, stage, completed: e.target.checked })
-                }
-              />
-              {PRODUCTION_STAGE_LABEL[stage]}
-            </label>
-          );
-        })}
-      </div>
-    );
+  function handlePrintSubmit(e: FormEvent) {
+    e.preventDefault();
+    const query = toQueryString({
+      deliveryDateFrom: printDateFrom || undefined,
+      deliveryDateTo: printDateTo || undefined,
+    });
+    window.open(pdfUrl(`/pdf/production/sheet.pdf${query}`), "_blank", "noopener,noreferrer");
+    setPrintModalOpen(false);
   }
 
   return (
@@ -167,9 +146,9 @@ export function ProductionPage() {
       <PageHeader
         title="Producción"
         actions={
-          <a href={pdfUrl("/pdf/production/sheet.pdf")} target="_blank" rel="noreferrer">
-            <SecondaryButton type="button">Imprimir planilla</SecondaryButton>
-          </a>
+          <SecondaryButton type="button" onClick={() => setPrintModalOpen(true)}>
+            Imprimir planilla
+          </SecondaryButton>
         }
       />
 
@@ -216,8 +195,6 @@ export function ProductionPage() {
             rows={data?.items ?? []}
             rowKey={(row) => row.id}
             emptyMessage="Todavía no hay productos en producción."
-            expandedRowKey={expandedRowId}
-            renderExpandedRow={renderProgress}
             pagination={{
               mode: "server",
               page,
@@ -228,6 +205,42 @@ export function ProductionPage() {
           />
         )}
       </Card>
+
+      <Modal
+        open={printModalOpen}
+        title="Imprimir planilla de producción"
+        onClose={() => setPrintModalOpen(false)}
+      >
+        <form onSubmit={handlePrintSubmit}>
+          <p className="mb-4 text-sm text-ink-soft">
+            Elegí el rango de fechas de entrega a incluir en la planilla.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <FieldLabel>Desde</FieldLabel>
+              <TextInput
+                type="date"
+                value={printDateFrom}
+                onChange={(e) => setPrintDateFrom(e.target.value)}
+              />
+            </div>
+            <div>
+              <FieldLabel>Hasta</FieldLabel>
+              <TextInput
+                type="date"
+                value={printDateTo}
+                onChange={(e) => setPrintDateTo(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <SecondaryButton type="button" onClick={() => setPrintModalOpen(false)}>
+              Cancelar
+            </SecondaryButton>
+            <PrimaryButton type="submit">Generar PDF</PrimaryButton>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
