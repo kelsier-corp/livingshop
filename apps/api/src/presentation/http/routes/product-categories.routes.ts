@@ -6,8 +6,8 @@ export function createProductCategoriesRouter(controller: ProductCategoriesContr
   const router = Router();
   router.get("/", requireRole("admin", "sales"), controller.list);
   router.get("/all", requireRole("admin", "sales"), controller.listAll);
-  router.post("/", requireRole("admin"), controller.create);
-  router.put("/:id", requireRole("admin"), controller.update);
-  router.delete("/:id", requireRole("admin"), controller.remove);
+  router.post("/", requireRole("admin", "sales"), controller.create);
+  router.put("/:id", requireRole("admin", "sales"), controller.update);
+  router.delete("/:id", requireRole("admin", "sales"), controller.remove);
   return router;
 }

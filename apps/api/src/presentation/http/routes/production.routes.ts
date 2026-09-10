@@ -8,7 +8,7 @@ export function createProductionRouter(controller: ProductionController): Router
   router.get("/board", controller.board);
   router.patch(
     "/items/:itemId/stages/:stage",
-    requireRole("admin", "factory"),
+    requireRole("admin", "sales", "factory"),
     controller.toggleStage
   );
   return router;

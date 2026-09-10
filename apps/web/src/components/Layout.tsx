@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/product-types", label: "Productos", roles: ROUTE_ROLES.productTypes },
   { to: "/prices", label: "Precios", roles: ROUTE_ROLES.prices },
   { to: "/attribute-catalogs", label: "Catálogos", roles: ROUTE_ROLES.attributeCatalogs },
+  { to: "/users", label: "Usuarios", roles: ROUTE_ROLES.users },
 ];
 
 export function Layout() {

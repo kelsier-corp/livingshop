@@ -58,10 +58,10 @@ El objetivo de este proyecto es que **una sola carga de datos** (producto + orde
 
 - **Usuario**: id, nombre, email, password_hash, rol (`admin` \| `vendedor` \| `fabrica`), activo.
 - **Cliente**: id, nombre, apellido, direccion_entrega, celular, telefono, email.
-- **TipoProducto** _(catálogo, gestionado por admin)_: id, nombre (ej. "Chester Industrial"), descripcion, activo.
-- **CatalogoAtributo** _(catálogo maestro compartido, gestionado por admin)_: id, nombre (ej. "Tela", "Color de pata", "Tipo de brazo"). Agrupa los valores reutilizables entre tipos de producto.
+- **TipoProducto** _(catálogo, gestionado por admin y vendedor)_: id, nombre (ej. "Chester Industrial"), descripcion, activo.
+- **CatalogoAtributo** _(catálogo maestro compartido, gestionado por admin y vendedor)_: id, nombre (ej. "Tela", "Color de pata", "Tipo de brazo"). Agrupa los valores reutilizables entre tipos de producto.
 - **CatalogoValor**: id, catalogo_atributo_id (FK), valor (ej. "Liso Molinari 04 Camel"), activo. Evita retipear el mismo valor en cada tipo de producto.
-- **AtributoDefinicion** _(plantilla de atributos por tipo de producto, gestionado por admin)_: id, tipo_producto_id (FK), nombre, tipo_dato (`texto` \| `numero` \| `catalogo` \| `color`), catalogo_atributo_id (FK, solo si tipo_dato = `catalogo`), orden, requerido. Cuando el atributo es de tipo `catalogo`, el vendedor elige un valor de `CatalogoValor`; cuando es `texto` libre, tipea directamente (pensado para casos puntuales, ej. muebles de diseño no estándar).
+- **AtributoDefinicion** _(plantilla de atributos por tipo de producto, gestionado por admin y vendedor)_: id, tipo_producto_id (FK), nombre, tipo_dato (`texto` \| `numero` \| `catalogo` \| `color`), catalogo_atributo_id (FK, solo si tipo_dato = `catalogo`), orden, requerido. Cuando el atributo es de tipo `catalogo`, el vendedor elige un valor de `CatalogoValor`; cuando es `texto` libre, tipea directamente (pensado para casos puntuales, ej. muebles de diseño no estándar).
 - **Orden**: id, numero, fecha, fecha_entrega, cliente_id (FK), vendedor_id (FK), estado (`borrador` \| `en_produccion` \| `entregada` \| `anulada`), total, pagado, saldo, forma_pago, observaciones.
 - **OrdenItem** (línea de producto dentro de una orden): id, orden_id (FK), tipo_producto_id (FK), cantidad, precio_unitario, precio_total, `atributos` (**JSONB** — valores de los AtributoDefinicion del tipo + campos ad-hoc agregados por el vendedor para esta línea), comentarios_fabricacion (texto libre, ej. "PUFF POR SEPARADO Y COLCHONETA!!").
 - **Adjunto**: id, orden_item_id (FK), tipo (`croquis` \| `foto_referencia`), url, nombre_archivo.
@@ -110,12 +110,12 @@ _(Alternativa a evaluar si el presupuesto lo permite: Vercel para el frontend + 
 | Rol          | Puede                                                                                                                                                                                                                                        |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Admin**    | Todo: gestiona catálogo de productos/atributos, usuarios, ve reportes, ve todas las órdenes y pagos.                                                                                                                                         |
-| **Vendedor** | Crea/edita clientes y órdenes, agrega productos y atributos ad-hoc, registra pagos, genera el PDF para el cliente. No edita el catálogo base de productos/atributos.                                                                         |
+| **Vendedor** | Mismos permisos que Admin en todo el sistema — incluye el catálogo base de productos/atributos — con una sola excepción: no gestiona usuarios.                                                                                               |
 | **Fábrica**  | Ve fichas técnicas y la planilla de producción, marca las etapas de avance por línea. También puede ver el detalle completo de cualquier orden, **incluyendo precios y pagos** — de solo lectura, no edita nada salvo el estado de la orden. |
 
 ## 8. Módulos del sistema
 
-1. **Catálogo de productos** (CRUD, admin) — tipos de producto + sus atributos.
+1. **Catálogo de productos** (CRUD, admin + vendedor) — tipos de producto + sus atributos.
 2. **Clientes** (CRUD).
 3. **Órdenes** — alta/edición, líneas de producto con atributos + adjuntos, pagos, cambio de estado, exportar PDF (orden) y ficha técnica.
 4. **Producción** — pantalla que reemplaza la planilla de fábrica: lista de líneas agrupadas por fecha de entrega/orden, checkboxes de etapa, exportable a **Google Sheets (vía API)** y a **PDF para imprimir** en planta.
