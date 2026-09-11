@@ -12,6 +12,9 @@ export interface SalesRow {
   orderNumber: number;
   orderDate: Date;
   customerFullName: string;
+  customerTaxId: string | null;
+  customerBusinessName: string | null;
+  customerInvoiceType: string | null;
   items: SalesRowItem[];
   totalAmount: number;
   amountPaid: number;

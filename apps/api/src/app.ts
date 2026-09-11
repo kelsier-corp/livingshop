@@ -9,6 +9,7 @@ import { OrderService } from "@application/orders/OrderService";
 import { PaymentMethodService } from "@application/payment-methods/PaymentMethodService";
 import { PdfService } from "@application/pdf/PdfService";
 import { ProductionService } from "@application/production/ProductionService";
+import { SalesExportService } from "@application/sales/SalesExportService";
 import { SalesService } from "@application/sales/SalesService";
 import { UserService } from "@application/users/UserService";
 import { env } from "@config/env";
@@ -24,6 +25,7 @@ import { PrismaOrderRepository } from "@infrastructure/repositories/PrismaOrderR
 import { PrismaPaymentMethodRepository } from "@infrastructure/repositories/PrismaPaymentMethodRepository";
 import { PrismaUserRepository } from "@infrastructure/repositories/PrismaUserRepository";
 import { LocalFileStorage } from "@infrastructure/storage/LocalFileStorage";
+import { ExcelJsSalesExportRenderer } from "@infrastructure/xlsx/ExcelJsSalesExportRenderer";
 import { AttributeCatalogsController } from "@presentation/http/controllers/attribute-catalogs.controller";
 import { CustomersController } from "@presentation/http/controllers/customers.controller";
 import { OrdersController } from "@presentation/http/controllers/orders.controller";
@@ -57,6 +59,7 @@ export function createApp(): Express {
   const paymentMethodRepository = new PrismaPaymentMethodRepository(prisma);
   const fileStorage = new LocalFileStorage(env.uploadsDir);
   const pdfRenderer = new ReactPdfRenderer(env.uploadsDir);
+  const salesExportRenderer = new ExcelJsSalesExportRenderer();
 
   const userService = new UserService(userRepository);
   const customerService = new CustomerService(customerRepository);
@@ -72,6 +75,7 @@ export function createApp(): Express {
   );
   const productionService = new ProductionService(orderRepository);
   const salesService = new SalesService(orderRepository);
+  const salesExportService = new SalesExportService(orderRepository, salesExportRenderer);
   const paymentMethodService = new PaymentMethodService(paymentMethodRepository);
   const pdfService = new PdfService(orderRepository, customerRepository, pdfRenderer);
 
@@ -82,7 +86,7 @@ export function createApp(): Express {
   const attributeCatalogsController = new AttributeCatalogsController(attributeCatalogService);
   const ordersController = new OrdersController(orderService);
   const productionController = new ProductionController(productionService);
-  const salesController = new SalesController(salesService);
+  const salesController = new SalesController(salesService, salesExportService);
   const pdfController = new PdfController(pdfService);
   const paymentMethodsController = new PaymentMethodsController(paymentMethodService);
 
