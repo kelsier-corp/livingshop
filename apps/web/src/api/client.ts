@@ -56,13 +56,17 @@ export function apiUpload<T>(path: string, formData: FormData): Promise<T> {
   return apiFetch<T>(path, { method: "POST", body: formData });
 }
 
-export function pdfUrl(path: string): string {
-  // PDFs are opened via plain <a href target="_blank"> navigation, which can't attach the
-  // x-user-id header apiFetch uses everywhere else — pass it as a query param instead so the
-  // API's mock-auth middleware can still resolve who's asking.
+export function fileUrl(path: string): string {
+  // Generated documents (PDFs, XLSX exports) are opened via plain <a href target="_blank">
+  // navigation, which can't attach the x-user-id header apiFetch uses everywhere else — pass it
+  // as a query param instead so the API's mock-auth middleware can still resolve who's asking.
   const userId = getCurrentUserId();
   const separator = path.includes("?") ? "&" : "?";
   return userId ? `/api${path}${separator}userId=${encodeURIComponent(userId)}` : `/api${path}`;
+}
+
+export function pdfUrl(path: string): string {
+  return fileUrl(path);
 }
 
 export function toQueryString(params: object): string {

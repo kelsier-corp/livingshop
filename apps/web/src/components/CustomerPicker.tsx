@@ -12,6 +12,11 @@ const EMPTY_NEW_CUSTOMER: CustomerInput = {
   mobilePhone: "",
   phone: "",
   email: "",
+  taxId: "",
+  invoiceType: "",
+  businessName: "",
+  secondaryPhone: "",
+  invoiceDescription: "",
 };
 
 interface Props {

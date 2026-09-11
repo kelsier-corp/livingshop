@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { pdfUrl } from "@/api/client";
+import { fileUrl, pdfUrl } from "@/api/client";
 import { fetchSalesRows } from "@/api/sales";
 import { SalesRow } from "@/api/types";
 import { DataTable, DataTableColumn } from "@/components/DataTable";
@@ -52,53 +52,39 @@ export function SalesPage() {
         </Link>
       ),
     },
-    { key: "date", header: "Fecha", width: "10%", render: (row) => formatDate(row.orderDate) },
+    { key: "date", header: "Fecha", width: "12%", render: (row) => formatDate(row.orderDate) },
     {
       key: "customer",
       header: "Cliente",
-      width: "16%",
+      width: "26%",
       truncate: true,
       render: (row) => row.customerFullName,
     },
     {
-      key: "products",
-      header: "Productos y entrega",
-      width: "26%",
-      render: (row) => (
-        <div>
-          {row.items.map((item, index) => (
-            <div key={index} className="truncate">
-              {item.quantity}x {item.productTypeName} — entrega {formatDate(item.deliveryDate)}
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    {
       key: "total",
       header: "Total",
-      width: "12%",
+      width: "16%",
       align: "right",
       render: (row) => <span className="font-mono">{formatCurrency(row.totalAmount)}</span>,
     },
     {
       key: "paid",
       header: "Pagado",
-      width: "12%",
+      width: "14%",
       align: "right",
       render: (row) => <span className="font-mono">{formatCurrency(row.amountPaid)}</span>,
     },
     {
       key: "balance",
       header: "Saldo",
-      width: "10%",
+      width: "12%",
       align: "right",
       render: (row) => <span className="font-mono">{formatCurrency(row.balance)}</span>,
     },
     {
       key: "status",
       header: "Estado",
-      width: "10%",
+      width: "12%",
       render: (row) => <OrderStatusBadge status={row.status} />,
     },
   ];
@@ -108,9 +94,14 @@ export function SalesPage() {
       <PageHeader
         title="Ventas"
         actions={
-          <a href={pdfUrl("/pdf/sales/sheet.pdf")} target="_blank" rel="noreferrer">
-            <SecondaryButton type="button">Imprimir planilla</SecondaryButton>
-          </a>
+          <div className="flex gap-2">
+            <a href={fileUrl("/sales/sheet.xlsx")} target="_blank" rel="noreferrer">
+              <SecondaryButton type="button">Generar planilla</SecondaryButton>
+            </a>
+            <a href={pdfUrl("/pdf/sales/sheet.pdf")} target="_blank" rel="noreferrer">
+              <SecondaryButton type="button">Imprimir planilla</SecondaryButton>
+            </a>
+          </div>
         }
       />
 
