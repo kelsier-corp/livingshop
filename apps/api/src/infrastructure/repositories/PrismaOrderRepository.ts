@@ -13,7 +13,11 @@ import {
   ProductionStageStatus,
 } from "@domain/entities/Order";
 import { PageResult } from "@domain/entities/Pagination";
-import { OrderItemWithContext, ProductionListQuery } from "@domain/entities/Production";
+import {
+  OrderItemWithContext,
+  ProductionListQuery,
+  ProductionSheetQuery,
+} from "@domain/entities/Production";
 import { OrderRepository } from "@domain/repositories/OrderRepository";
 import { SalesListQuery, SalesRow } from "@domain/entities/Sales";
 import { OrderStatus } from "@domain/entities/enums";
@@ -376,9 +380,31 @@ export class PrismaOrderRepository implements OrderRepository {
     };
   }
 
-  async listAllItemsWithContext(): Promise<OrderItemWithContext[]> {
+  async listAllItemsWithContext(query: ProductionSheetQuery = {}): Promise<OrderItemWithContext[]> {
+    const where: Prisma.OrderItemWhereInput = {
+      active: true,
+      order: { status: { in: ["draft", "in_production"] } },
+      // includeInFactorySheet also keeps a product off the printed production sheet, not just the
+      // factory sheet — see ProductType.includeInFactorySheet.
+      productType: { includeInFactorySheet: true },
+    };
+
+    const dateFilter: Prisma.DateTimeFilter = {};
+    if (query.deliveryDateFrom) {
+      const start = new Date(query.deliveryDateFrom);
+      start.setUTCHours(0, 0, 0, 0);
+      dateFilter.gte = start;
+    }
+    if (query.deliveryDateTo) {
+      const end = new Date(query.deliveryDateTo);
+      end.setUTCHours(0, 0, 0, 0);
+      end.setUTCDate(end.getUTCDate() + 1);
+      dateFilter.lt = end;
+    }
+    if (dateFilter.gte || dateFilter.lt) where.deliveryDate = dateFilter;
+
     const rows = await this.prisma.orderItem.findMany({
-      where: { active: true, order: { status: { in: ["draft", "in_production"] } } },
+      where,
       include: productionItemInclude,
       orderBy: [{ deliveryDate: "asc" }, { createdAt: "asc" }],
     });

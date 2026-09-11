@@ -389,11 +389,12 @@ export function ProductTypesPage() {
                   checked={form.includeInFactorySheet ?? true}
                   onChange={(e) => setForm({ ...form, includeInFactorySheet: e.target.checked })}
                 />
-                Incluir en la ficha técnica de fábrica
+                Incluir en la ficha técnica y la planilla de producción
               </label>
               <p className="mt-1 text-xs text-ink-soft/70">
                 Desmarcá esto para productos sin trabajo de fábrica (ej. flete, instalación) — no
-                van a aparecer en la ficha técnica de ninguna orden que los incluya.
+                van a aparecer en la ficha técnica ni en la planilla de producción de ninguna orden
+                que los incluya.
               </p>
             </div>
             <div className="col-span-2">

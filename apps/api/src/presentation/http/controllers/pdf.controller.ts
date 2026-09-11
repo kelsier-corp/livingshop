@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { PdfService } from "@application/pdf/PdfService";
 import { param } from "../utils/param";
+import { productionSheetQuerySchema } from "../validators/production.validators";
 
 function sendPdf(res: Response, fileName: string, buffer: Buffer): void {
   res.setHeader("Content-Type", "application/pdf");
@@ -25,8 +26,9 @@ export class PdfController {
     sendPdf(res, fileName, buffer);
   };
 
-  productionSheet = async (_req: Request, res: Response): Promise<void> => {
-    const { buffer, fileName } = await this.pdfService.productionSheet();
+  productionSheet = async (req: Request, res: Response): Promise<void> => {
+    const query = productionSheetQuerySchema.parse(req.query);
+    const { buffer, fileName } = await this.pdfService.productionSheet(query);
     sendPdf(res, fileName, buffer);
   };
 

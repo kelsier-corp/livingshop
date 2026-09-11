@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PaymentInput } from "@domain/entities/Order";
 import { PrismaOrderRepository } from "./PrismaOrderRepository";
@@ -216,5 +216,59 @@ describe("PrismaOrderRepository.listAllItemsWithContext — needsReprint", () =>
     );
     const [item] = await repository.listAllItemsWithContext();
     expect(item.needsReprint).toBe(false);
+  });
+});
+
+describe("PrismaOrderRepository.listAllItemsWithContext — production sheet filters", () => {
+  function buildRepositoryWithSpy() {
+    const findMany = vi.fn(async () => []);
+    const prisma = { orderItem: { findMany } } as unknown as PrismaClient;
+    return { repository: new PrismaOrderRepository(prisma), findMany };
+  }
+
+  function whereArg(findMany: ReturnType<typeof vi.fn>): Prisma.OrderItemWhereInput {
+    return (findMany.mock.calls[0] as unknown as [{ where: Prisma.OrderItemWhereInput }])[0].where;
+  }
+
+  // Same rule as the factory sheet — a product type opted out of factory-facing paperwork stays
+  // out of the printed production sheet too, without needing a caller-supplied flag.
+  it("always excludes product types with includeInFactorySheet: false", async () => {
+    const { repository, findMany } = buildRepositoryWithSpy();
+    await repository.listAllItemsWithContext();
+    expect(whereArg(findMany)).toMatchObject({
+      productType: { includeInFactorySheet: true },
+    });
+  });
+
+  it("has no delivery-date filter when neither bound is given", async () => {
+    const { repository, findMany } = buildRepositoryWithSpy();
+    await repository.listAllItemsWithContext();
+    expect(whereArg(findMany).deliveryDate).toBeUndefined();
+  });
+
+  it("filters from the start of deliveryDateFrom's day (UTC)", async () => {
+    const { repository, findMany } = buildRepositoryWithSpy();
+    await repository.listAllItemsWithContext({
+      deliveryDateFrom: new Date("2026-03-05T15:00:00Z"),
+    });
+    expect(whereArg(findMany).deliveryDate).toEqual({ gte: new Date("2026-03-05T00:00:00Z") });
+  });
+
+  it("filters up to (exclusive) the start of the day after deliveryDateTo", async () => {
+    const { repository, findMany } = buildRepositoryWithSpy();
+    await repository.listAllItemsWithContext({ deliveryDateTo: new Date("2026-03-05T15:00:00Z") });
+    expect(whereArg(findMany).deliveryDate).toEqual({ lt: new Date("2026-03-06T00:00:00Z") });
+  });
+
+  it("combines both bounds into a single range", async () => {
+    const { repository, findMany } = buildRepositoryWithSpy();
+    await repository.listAllItemsWithContext({
+      deliveryDateFrom: new Date("2026-03-01T00:00:00Z"),
+      deliveryDateTo: new Date("2026-03-10T00:00:00Z"),
+    });
+    expect(whereArg(findMany).deliveryDate).toEqual({
+      gte: new Date("2026-03-01T00:00:00Z"),
+      lt: new Date("2026-03-11T00:00:00Z"),
+    });
   });
 });

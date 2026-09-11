@@ -1,3 +1,4 @@
+import { ProductionSheetQuery } from "@domain/entities/Production";
 import { NotFoundError } from "@domain/errors/DomainError";
 import { CustomerRepository } from "@domain/repositories/CustomerRepository";
 import { OrderRepository } from "@domain/repositories/OrderRepository";
@@ -43,8 +44,8 @@ export class PdfService {
     };
   }
 
-  async productionSheet(): Promise<GeneratedPdf> {
-    const rows = await this.orderRepository.listAllItemsWithContext();
+  async productionSheet(query: ProductionSheetQuery = {}): Promise<GeneratedPdf> {
+    const rows = await this.orderRepository.listAllItemsWithContext(query);
     const buffer = await this.pdfRenderer.renderProductionSheet(rows);
     return { buffer, fileName: productionSheetFileName() };
   }
