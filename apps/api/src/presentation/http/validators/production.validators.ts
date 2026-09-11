@@ -10,3 +10,8 @@ export const productionListQuerySchema = z.object({
   deliveryDate: z.coerce.date().optional(),
   number: z.coerce.number().int().positive().optional(),
 });
+
+export const productionSheetQuerySchema = z.object({
+  deliveryDateFrom: z.coerce.date().optional(),
+  deliveryDateTo: z.coerce.date().optional(),
+});

@@ -129,9 +129,14 @@ export function formatDate(value: Date | null): string {
 
 // Printing the same factory sheet twice in one day is common (a correction, a re-check) —
 // showing only the date makes it impossible to tell which printout is the current one.
+//
+// timeZone is pinned to Argentina explicitly — without it, toLocaleString falls back to the
+// server process's own local zone (UTC in Docker), so a printedAt instant would render in UTC
+// clock time instead of the time an Argentina-based staff member actually printed it.
 export function formatDateTime(value: Date | null): string {
   if (!value) return "-";
   return new Date(value).toLocaleString("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

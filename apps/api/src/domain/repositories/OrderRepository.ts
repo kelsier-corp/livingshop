@@ -12,7 +12,11 @@ import {
   ProductionStageStatus,
 } from "../entities/Order";
 import { PageResult } from "../entities/Pagination";
-import { OrderItemWithContext, ProductionListQuery } from "../entities/Production";
+import {
+  OrderItemWithContext,
+  ProductionListQuery,
+  ProductionSheetQuery,
+} from "../entities/Production";
 import { SalesListQuery, SalesRow } from "../entities/Sales";
 
 export interface OrderRepository {
@@ -53,7 +57,7 @@ export interface OrderRepository {
   // Paginated variants back the interactive UI lists; the "All"/unbounded variants exist only
   // for the printed PDFs, which intentionally need the complete matching data set in one document.
   listItemsWithContext(query: ProductionListQuery): Promise<PageResult<OrderItemWithContext>>;
-  listAllItemsWithContext(): Promise<OrderItemWithContext[]>;
+  listAllItemsWithContext(query?: ProductionSheetQuery): Promise<OrderItemWithContext[]>;
   listSalesRows(query: SalesListQuery): Promise<PageResult<SalesRow>>;
   listAllSalesRows(): Promise<SalesRow[]>;
 }
