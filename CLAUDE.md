@@ -14,10 +14,10 @@ Run everything via Docker (applies migrations, seeds demo data, starts both apps
 docker compose up --build          # api on :4000, web on :5173, postgres on :5432
 ```
 
-Without Docker (Node 20+, local Postgres):
+Without Docker (Node 20+, local Postgres) — **prefer this path over starting Docker Desktop** when a local Postgres is already reachable (check `postgresql.conf`'s `port` — it isn't always 5432):
 
 ```bash
-cd apps/api && cp .env.example .env && npm install
+cd apps/api && cp .env.example .env && npm install    # set DATABASE_URL in .env to match your local Postgres (user/db must exist — CREATE ROLE/DATABASE if not)
 npm run prisma:migrate             # apply schema, creates a migration if needed
 npm run seed                       # seed 3 mock users + demo catalog/orders
 npm run dev                        # http://localhost:4000
@@ -25,6 +25,8 @@ npm run dev                        # http://localhost:4000
 cd apps/web && npm install
 npm run dev                        # http://localhost:5173
 ```
+
+`prisma:migrate`/`prisma:deploy` auto-load `.env`, and so does `dev` (`server.ts` imports `./app`, which imports `@config/env` — triggering `dotenv/config` — before it imports `@infrastructure/database/prisma`). `seed` is the exception: `prisma/seed.ts` imports `@prisma/client` directly, with nothing upstream loading `.env` first — if `npm run seed` fails with `Environment variable not found: DATABASE_URL`, pass it inline (e.g. `DATABASE_URL="postgresql://livingshop:livingshop@localhost:<port>/livingshop?schema=public" npm run seed`) rather than debugging it as a real failure. The same error from `npm run dev` is a real configuration problem — check `.env` itself. Only fall back to `docker compose up` if no local Postgres is reachable at all.
 
 Other useful commands:
 
@@ -79,3 +81,13 @@ Four documents are generated server-side with `@react-pdf/renderer` from `infras
 - **Code is English-only**: identifiers, DB table/column names, comments, commit messages, file names. Spanish is only for product copy visible to end users (UI text, PDF content) and for prose docs like `docs/DISENO.md` and conversational replies — never for anything structural.
 - New backend module → mirror the existing layering: domain interface + entity, application service, Prisma repository implementation, controller/validator/route, then wire it in `app.ts`.
 - New frontend list page → use `DataTable` with explicit column widths, `Modal` for create/edit, and add the route's allowed roles to `auth/routeRoles.ts`.
+
+## Branching
+
+Full rules live in `CONTRIBUTING.md` — read it before your first PR. The one rule that matters before writing a single line of code: **create and check out a `feature/<slug>` branch from an up-to-date `develop` before planning or editing anything.** Never plan edits while sitting on `develop`/`main`. Follow `CONTRIBUTING.md`'s branch naming convention (`feature/123-descriptive-slug`, issue number included) — the PR description should also reference the issue(s) it closes.
+
+## Verification before calling a change done
+
+1. `npm run build`, `npm run test` (where a test script exists), and `npm run lint` in every app touched.
+2. Run the change for real: start the local stack (see "Commands" above) and exercise it end-to-end — the browser (`claude-in-chrome`) for anything in `apps/web`, `curl`/`gh` for API-only or GitHub-workflow changes.
+3. When updating a PR, put the actual verification results (not just "tests pass") in the description or as a comment: what you clicked, what you saw, what data you checked.
