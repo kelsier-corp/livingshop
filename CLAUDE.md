@@ -26,7 +26,7 @@ cd apps/web && npm install
 npm run dev                        # http://localhost:5173
 ```
 
-`prisma:migrate`/`prisma:deploy` auto-load `.env`, but `seed` and `dev` run through `ts-node-dev` directly against `src/server.ts`/`prisma/seed.ts`, neither of which imports anything that triggers `dotenv/config` before Prisma reads `DATABASE_URL` — if you get `Environment variable not found: DATABASE_URL`, pass it inline for that command (e.g. `DATABASE_URL="postgresql://livingshop:livingshop@localhost:<port>/livingshop?schema=public" npm run seed`) rather than debugging it as a real failure. Only fall back to `docker compose up` if no local Postgres is reachable at all.
+`prisma:migrate`/`prisma:deploy` auto-load `.env`, and so does `dev` (`server.ts` imports `./app`, which imports `@config/env` — triggering `dotenv/config` — before it imports `@infrastructure/database/prisma`). `seed` is the exception: `prisma/seed.ts` imports `@prisma/client` directly, with nothing upstream loading `.env` first — if `npm run seed` fails with `Environment variable not found: DATABASE_URL`, pass it inline (e.g. `DATABASE_URL="postgresql://livingshop:livingshop@localhost:<port>/livingshop?schema=public" npm run seed`) rather than debugging it as a real failure. The same error from `npm run dev` is a real configuration problem — check `.env` itself. Only fall back to `docker compose up` if no local Postgres is reachable at all.
 
 Other useful commands:
 
@@ -84,7 +84,7 @@ Four documents are generated server-side with `@react-pdf/renderer` from `infras
 
 ## Branching
 
-Full rules live in `CONTRIBUTING.md` — read it before your first PR. The one rule that matters before writing a single line of code: **create and check out a `feature/<slug>` branch from an up-to-date `develop` before planning or editing anything.** Never plan edits while sitting on `develop`/`main`. Branch names in this repo are descriptive slugs (`feature/orders-cleanup-and-status-rework`), not required to embed the issue number — but the PR description should still reference the issue(s) it closes.
+Full rules live in `CONTRIBUTING.md` — read it before your first PR. The one rule that matters before writing a single line of code: **create and check out a `feature/<slug>` branch from an up-to-date `develop` before planning or editing anything.** Never plan edits while sitting on `develop`/`main`. Follow `CONTRIBUTING.md`'s branch naming convention (`feature/123-descriptive-slug`, issue number included) — the PR description should also reference the issue(s) it closes.
 
 ## Verification before calling a change done
 

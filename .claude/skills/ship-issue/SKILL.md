@@ -15,7 +15,7 @@ If multiple issues are tightly coupled (one explicitly extends or depends on ano
 
 ```bash
 git checkout develop && git pull
-git checkout -b feature/<descriptive-slug>
+git checkout -b feature/<issue-number>-<descriptive-slug>
 ```
 
 Never plan or write code while sitting on `develop`/`main` — see `CLAUDE.md`'s Branching section.
@@ -30,15 +30,15 @@ Check whether a local Postgres is already reachable before starting Docker Deskt
 
 ```bash
 cd apps/api
-npm run prisma:deploy   # or prisma:migrate if this created a new migration
-npm run seed             # only if the local DB isn't already seeded
-npm run dev               # :4000
+npm run prisma:migrate   # applies the schema, creates a migration if this change needs one
+npm run seed              # only if the local DB isn't already seeded
+npm run dev                # :4000
 
 cd ../web
-npm run dev               # :5173
+npm run dev                # :5173
 ```
 
-Remember: `seed`/`dev` don't auto-load `.env` (see `CLAUDE.md`) — pass `DATABASE_URL` inline if you hit "Environment variable not found".
+Remember: `seed` doesn't auto-load `.env` (see `CLAUDE.md`) — pass `DATABASE_URL` inline if you hit "Environment variable not found" from that command. The same error from `npm run dev` is a real config problem, not this gotcha.
 
 ## 5. Verify
 
@@ -53,8 +53,8 @@ Don't report a UI change as done without having clicked it.
 ```bash
 git add <files>
 git commit -m "..."
-git push -u origin feature/<slug>
-gh pr create --repo kelsier-corp/livingshop --base develop --head feature/<slug> \
+git push -u origin feature/<issue-number>-<slug>
+gh pr create --repo kelsier-corp/livingshop --base develop --head feature/<issue-number>-<slug> \
   --title "..." --body "..."
 ```
 
