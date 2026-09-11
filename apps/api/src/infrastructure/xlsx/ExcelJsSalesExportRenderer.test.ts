@@ -124,6 +124,41 @@ describe("ExcelJsSalesExportRenderer", () => {
     expect(cellByHeader(sheet, 3, "Periodo").value).toBe("07/09/2026 - 13/09/2026");
   });
 
+  it("shows the order balance only on its first row, blank on the rest", async () => {
+    const renderer = new ExcelJsSalesExportRenderer();
+    const row = buildRow({
+      balance: 600,
+      items: [
+        { productTypeName: "Sofá Chester", quantity: 1, totalPrice: 1000, deliveryDate: new Date("2026-09-02") },
+        { productTypeName: "Puff", quantity: 2, totalPrice: 200, deliveryDate: new Date("2026-09-03") },
+      ],
+    });
+    const sheet = await readSheet(await renderer.renderWeeklySheet([row]));
+
+    expect(cellByHeader(sheet, 2, "Saldo a").value).toBe(600);
+    expect(cellByHeader(sheet, 3, "Saldo a").value).toBeFalsy();
+  });
+
+  it("keeps a delivery date at the start of an ISO week in that week regardless of the runtime's local timezone", async () => {
+    const renderer = new ExcelJsSalesExportRenderer();
+    // Monday 2026-09-07T00:00:00Z: a naive local-zone conversion in a negative-offset timezone
+    // (e.g. America/Argentina/Buenos_Aires, UTC-3) would roll this back into the prior Sunday,
+    // and thus the prior ISO week.
+    const row = buildRow({
+      items: [
+        {
+          productTypeName: "Sofá Chester",
+          quantity: 1,
+          totalPrice: 1000,
+          deliveryDate: new Date("2026-09-07T00:00:00.000Z"),
+        },
+      ],
+    });
+    const sheet = await readSheet(await renderer.renderWeeklySheet([row]));
+
+    expect(cellByHeader(sheet, 2, "Periodo").value).toBe("07/09/2026 - 13/09/2026");
+  });
+
   it("serializes billing info from the customer's tax id and business name, falling back to their full name", async () => {
     const renderer = new ExcelJsSalesExportRenderer();
     const rows = [

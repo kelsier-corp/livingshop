@@ -4,21 +4,21 @@ import { SalesExportRenderer } from "@application/sales/SalesExportRenderer";
 import { SalesRow } from "@domain/entities/Sales";
 
 const COLUMNS: Partial<ExcelJS.Column>[] = [
-  { header: "Periodo", key: "periodo", width: 22 },
-  { header: "Orden", key: "orden", width: 10 },
-  { header: "Productos", key: "productos", width: 36 },
-  { header: "Proveedor", key: "proveedor", width: 16 },
-  { header: "Pedido", key: "pedido", width: 12 },
-  { header: "Forma de pago", key: "formaDePago", width: 16 },
-  { header: "Importe", key: "importe", width: 14 },
-  { header: "Entrega", key: "entrega", width: 14 },
-  { header: "Saldo a", key: "saldoA", width: 14 },
-  { header: "Comentarios", key: "comentarios", width: 20 },
-  { header: "Tasas", key: "tasas", width: 12 },
-  { header: "Importe de acreditación", key: "importeAcreditacion", width: 20 },
-  { header: "Fecha de acreditación", key: "fechaAcreditacion", width: 18 },
-  { header: "Tipo de", key: "tipoDe", width: 16 },
-  { header: "Datos de facturación", key: "datosFacturacion", width: 28 },
+  { header: "Periodo", key: "period", width: 22 },
+  { header: "Orden", key: "orderNumber", width: 10 },
+  { header: "Productos", key: "products", width: 36 },
+  { header: "Proveedor", key: "supplier", width: 16 },
+  { header: "Pedido", key: "supplierOrder", width: 12 },
+  { header: "Forma de pago", key: "paymentMethod", width: 16 },
+  { header: "Importe", key: "amount", width: 14 },
+  { header: "Entrega", key: "deliveryDate", width: 14 },
+  { header: "Saldo a", key: "balance", width: 14 },
+  { header: "Comentarios", key: "comments", width: 20 },
+  { header: "Tasas", key: "fees", width: 12 },
+  { header: "Importe de acreditación", key: "creditedAmount", width: 20 },
+  { header: "Fecha de acreditación", key: "creditedDate", width: 18 },
+  { header: "Tipo de", key: "invoiceType", width: 16 },
+  { header: "Datos de facturación", key: "billingInfo", width: 28 },
 ];
 
 interface FlatSalesRow {
@@ -40,20 +40,27 @@ export class ExcelJsSalesExportRenderer implements SalesExportRenderer {
     sheet.columns = COLUMNS;
     sheet.getRow(1).font = { bold: true };
 
+    // The order's balance is a per-order figure, not a per-item one — show it only on an order's
+    // first row so a plain SUM() over the column in the destination spreadsheet doesn't multiply
+    // it by the order's item count.
+    const seenOrders = new Set<number>();
     for (const flat of flattenByWeek(rows)) {
+      const isFirstRowForOrder = !seenOrders.has(flat.orderNumber);
+      seenOrders.add(flat.orderNumber);
+
       const row = sheet.addRow({
-        periodo: flat.periodLabel,
-        orden: flat.orderNumber,
-        productos: flat.productLabel,
-        importe: flat.amount,
-        entrega: flat.deliveryDate,
-        saldoA: flat.balance,
-        tipoDe: flat.invoiceType ?? "",
-        datosFacturacion: flat.billingInfo ?? "",
+        period: flat.periodLabel,
+        orderNumber: flat.orderNumber,
+        products: flat.productLabel,
+        amount: flat.amount,
+        deliveryDate: flat.deliveryDate,
+        balance: isFirstRowForOrder ? flat.balance : "",
+        invoiceType: flat.invoiceType ?? "",
+        billingInfo: flat.billingInfo ?? "",
       });
-      row.getCell("importe").numFmt = "#,##0.00";
-      row.getCell("saldoA").numFmt = "#,##0.00";
-      row.getCell("entrega").numFmt = "dd/mm/yyyy";
+      row.getCell("amount").numFmt = "#,##0.00";
+      row.getCell("balance").numFmt = "#,##0.00";
+      row.getCell("deliveryDate").numFmt = "dd/mm/yyyy";
     }
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -66,7 +73,11 @@ export class ExcelJsSalesExportRenderer implements SalesExportRenderer {
 function flattenByWeek(rows: SalesRow[]): FlatSalesRow[] {
   const flat = rows.flatMap((row) =>
     row.items.map((item) => {
-      const weekStart = DateTime.fromJSDate(item.deliveryDate).startOf("week");
+      // `deliveryDate` comes from a date-only input coerced via `z.coerce.date()`, so JS always
+      // parses it as midnight UTC. Grouping with the runtime's local zone instead of "utc" would
+      // shift dates near a week boundary into the wrong ISO week whenever the server doesn't run
+      // in UTC (e.g. Argentina, UTC-3).
+      const weekStart = DateTime.fromJSDate(item.deliveryDate, { zone: "utc" }).startOf("week");
       const weekEnd = weekStart.endOf("week");
       return {
         weekStart,
